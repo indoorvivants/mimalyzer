@@ -1,0 +1,21 @@
+{
+  "name": "fullstack_scala",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run buildScalajsRelease && vite build",
+    "preview": "vite preview",
+    "dev": "concurrently npm:watchScalajs vite",
+    "watchScalajs": "scala-cli --cli-version 1.4.0 package . -w -f -o scalajs-frontend.js --js-emit-source-maps",
+    "buildScalajs": "scala-cli package . -f -o scalajs-frontend.js --js-emit-source-maps",
+    "buildScalajsRelease": "scala-cli --cli-version 1.4.0 package . -f -o scalajs-frontend.js --js-mode release"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "vite": "^5.2.0"
+  }
+}

@@ -1,0 +1,5 @@
+{
+    "mavenDependencies": [
+        "com.disneystreaming.alloy:alloy-core:latest.stable"
+    ]
+}

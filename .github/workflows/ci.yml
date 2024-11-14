@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6
+      - uses: VirtusLab/scala-cli-setup@main
+        with:
+          power: true
+
+      - name: Check formatting
+        run: make code-check || echo "Run `make pre-ci`"
+
+      # Smithy4s is not idempotent unfortunately :(
+      # - name: Check generated code is up to date
+      #   run: make smithy4s && git diff --exit-code
+
+      - name: Check Docker build 
+        run: make docker
+
