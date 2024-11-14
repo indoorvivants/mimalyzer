@@ -40,6 +40,9 @@ operation CreateComparison {
   output := {
     @required
     comparisonId: ComparisonId 
+
+    @required
+    problems: ProblemsList 
   }
 }
 
@@ -72,6 +75,7 @@ structure ComparisonAttributes {
   scalaVersion: ScalaVersion
 }
 
-integer ComparisonId
+@uuidFormat
+string ComparisonId
 string ScalaCode
 string ScalaVersion

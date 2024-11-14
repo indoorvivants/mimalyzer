@@ -8,71 +8,66 @@ import scala.scalajs.js.Promise
 import org.scalajs.dom
 
 def createApiClient(uri: String) = SimpleRestJsonFetchClient(
-  ComparisonService,
+  MimaService,
   uri
 ).make
 
 extension [T](p: => Promise[T]) inline def stream = EventStream.fromJsPromise(p)
 
 enum Action:
-  case GenerateNewTest
-
-// def renderTest(id: ComparisonId, init: , signal: Signal[Test]) =
-//   div(
-//     cls := "flex flex-col gap-2 border-1 border-slate-100 p-4 rounded-xl",
-//     p(
-//       i("ID=", id.toString()),
-//       p(
-//         b("Title: "),
-//         child.text <-- signal.map(_.attributes.title.value)
-//       ),
-//       p(
-//         b("Description: "),
-//         blockQuote(
-//           child.maybe <-- signal.map(
-//             _.attributes.description.map(_.value)
-//           )
-//         )
-//       )
-//     )
-//   )
+  case Submit
 
 @main def hello =
   // State
-  val allTests = Var(List.empty[Test])
+  val oldScalaCode = Var("class X{val x: Int = ???}")
+  val newScalaCode = Var("class X{def y: Int = ???}")
+  val scalaVersion = Var("2.13.15")
+  val result = Var("")
   val actionBus = EventBus[Action]()
+  val inprogress = Var(false)
 
   val apiClient = createApiClient(dom.window.location.href)
 
-  val loadInitialList =
-    apiClient.listTests().stream.map(_.tests) --> allTests
-
-  val renderList =
-    children <-- allTests.signal.split(_.id)(renderTest)
-
   val handleEvents =
-    actionBus.events --> { case Action.GenerateNewTest =>
-      apiClient
-        .createTest(
-          attributes = TestAttributes(
-            title = TestTitle("hello"),
-            description = Some(TestDescription("wut"))
-          )
+    actionBus.events.withCurrentValueOf(
+      oldScalaCode,
+      newScalaCode,
+      scalaVersion
+    ) --> { case (Action.Submit, old, nw, sv) =>
+      val attributes =
+        ComparisonAttributes(
+          beforeScalaCode = ScalaCode(old),
+          afterScalaCode = ScalaCode(nw),
+          scalaVersion = ScalaVersion(sv)
         )
-        .`then`(test => allTests.update(_ :+ test.test))
+
+      result.set("WAITING....")
+
+      apiClient
+        .createComparison(attributes)
+        .`then`(
+          good =>
+            result.set(
+              if good.problems.isEmpty then "NO PROBLEMS"
+              else "PROBLEMS\n" + good.problems.map(_.toString).mkString("\n")
+            ),
+          bad => result.set(s"ERROR: $bad")
+        )
+
     }
+
 
   val btn =
     button(
-      "Generate new test",
-      onClick.mapToStrict(Action.GenerateNewTest) --> actionBus,
+      "Check it",
+      onClick.mapToStrict(Action.Submit) --> actionBus,
       cls := "bg-sky-700 text-lg font-bold p-2 text-white"
     )
 
   val app =
     div(
       cls := "content mx-auto w-6/12 rounded-lg border-2 border-slate-400 p-4",
-      p("Welcome to Scala full stack template!", cls := "text-2xl m-2"),
+      p("Mimalyzer", cls := "text-2xl m-2"),
       div(
         cls := "flex gap-4",
         img(
@@ -81,9 +76,26 @@ enum Action:
         ),
         div(
           cls := "w-full",
-          loadInitialList,
+          h2("Old Scala code"),
+          textArea(
+            cls := "w-full border-2 border-slate-400",
+            onInput.mapToValue --> oldScalaCode,
+            value <-- oldScalaCode
+          ),
+          h2("New Scala code"),
+          textArea(
+            cls := "w-full border-2 border-slate-400",
+            onInput.mapToValue --> newScalaCode,
+            value <-- newScalaCode
+          ),
+          h2("Scala version"),
+          input(
+            cls := "w-full border-2 border-slate-400",
+            onInput.mapToValue --> scalaVersion,
+            value <-- scalaVersion
+          ),
           btn,
-          renderList,
+          pre(code(child.text <-- result)),
           handleEvents
         )
       )

@@ -9,6 +9,8 @@ import scribe.Scribe
 import smithy4s.http4s.SimpleRestJsonBuilder
 import cats.effect.std.Random
 import cats.effect.Ref
+import cats.effect.std.UUIDGen
+import concurrent.duration.*
 
 def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
   import cats.syntax.all.*
@@ -22,10 +24,25 @@ enum Status:
 
 case class State(comparison: Comparison, status: Status)
 
-class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]]) extends MimaService[IO]:
-  override def createComparison(attributes: ComparisonAttributes) = ???
+class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]])
+    extends MimaService[IO]:
+  val randomID = UUIDGen[IO].randomUUID.map(ComparisonId(_))
+  override def createComparison(attributes: ComparisonAttributes) =
+    randomID.flatMap: id =>
+      analyseFileCode(
+        attributes.beforeScalaCode,
+        attributes.afterScalaCode,
+        attributes.scalaVersion
+      ).timeout(20.seconds).flatMap: problems =>
+        ref.update(
+          _.updated(
+            id,
+            State(Comparison(id, attributes), Status.Completed(problems))
+          )
+        ) *>
+          IO.pure(CreateComparisonOutput(id, problems))
   override def getComparison(id: ComparisonId) = ???
-
+end TestServiceImpl
 
 def routesResource(service: MimaService[IO]) =
   import org.http4s.implicits.*

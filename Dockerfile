@@ -7,7 +7,7 @@ RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh
     chmod +x scala-cli && \
     scala-cli config power true && \
     scala-cli version && \
-    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.5.0-RC2
+    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.5.2
 
 WORKDIR /source
 COPY shared shared
@@ -26,6 +26,13 @@ RUN apt update && apt install -y gpg wget && \
     wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null && \
     echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
     apt update && apt install -y temurin-22-jdk
+
+RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh && \
+    mv scala-cli.sh /usr/local/bin/scala-cli && \
+    chmod +x /usr/local/bin/scala-cli && \
+    scala-cli config power true && \
+    scala-cli version && \
+    echo '@main def hello = println(42)' | scala-cli run _
 
 COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./nginx/entrypoint.sh /app/entrypoint.sh

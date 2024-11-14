@@ -12,59 +12,73 @@ import fs2.io.file.Files
 import fs2.io.process.Processes, fs2.io.process.ProcessBuilder
 import java.io.File
 
-object Test extends IOApp.Simple:
-  val files = Files[IO]
-  val proc = Processes[IO]
+import com.typesafe.tools.mima.lib.MiMaLib
 
-  override def run: IO[Unit] =
-    val scala1 =
-      """
-      class X {val test: Int = ???}
-      """
+val files = Files[IO]
+val proc = Processes[IO]
 
-    val scala2 =
-      """
-      class X {def test: Int = ???}
-      """
+def analyseFileCode(
+    oldScala: ScalaCode,
+    newScala: ScalaCode,
+    scalaVersion: ScalaVersion
+) =
+  for
+    tmpdir1 <- files.createTempDirectory
+    tmpdir2 <- files.createTempDirectory
+    _ <- fs2
+      .Stream(oldScala.value)
+      .through(files.writeUtf8(tmpdir1.resolve("old.scala")))
+      .compile
+      .drain
 
-    // files.createTempDirectory.both(files.createTem)
-    for
-      tmpdir1 <- files.createTempDirectory
-      tmpdir2 <- files.createTempDirectory
-      _ <- fs2
-        .Stream(scala1)
-        .through(files.writeUtf8(tmpdir1.resolve("test.scala")))
-        .compile
-        .drain
+    _ <- fs2
+      .Stream(newScala.value)
+      .through(files.writeUtf8(tmpdir2.resolve("new.scala")))
+      .compile
+      .drain
 
-      _ <- fs2
-        .Stream(scala2)
-        .through(files.writeUtf8(tmpdir2.resolve("test.scala")))
-        .compile
-        .drain
-
-      _ <- IO.println(tmpdir1) *> IO.println(tmpdir2)
-
-      proc1 <- proc
-        .spawn(
-          ProcessBuilder("scala-cli", "compile", "test.scala", "-p")
-            .withWorkingDirectory(tmpdir1)
+    proc1 <- proc
+      .spawn(
+        ProcessBuilder(
+          "scala-cli",
+          "compile",
+          "old.scala",
+          "-p",
+          "-S",
+          scalaVersion.value
         )
-        .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
+          .withWorkingDirectory(tmpdir1)
+      )
+      .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
 
-      proc2 <- proc
-        .spawn(
-          ProcessBuilder("scala-cli", "compile", "test.scala", "-p")
-            .withWorkingDirectory(tmpdir2)
+    proc2 <- proc
+      .spawn(
+        ProcessBuilder(
+          "scala-cli",
+          "compile",
+          "new.scala",
+          "-p",
+          "-S",
+          scalaVersion.value
         )
-        .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
+          .withWorkingDirectory(tmpdir2)
+      )
+      .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
 
-      _ = println(proc1.split(File.pathSeparatorChar).toList)
-      _ = println(proc2.split(File.pathSeparatorChar).toList)
-    yield ()
-    end for
-  end run
-end Test
+    classes1 :: classpath1 = proc1.split(File.pathSeparatorChar).toList
+    classes2 :: classpath2 = proc2.split(File.pathSeparatorChar).toList
+
+    lib = new MiMaLib(classpath1.map(new File(_)))
+
+    problems <- IO.blocking(
+      lib.collectProblems(new File(classes1), new File(classes2), Nil)
+    )
+
+    _ <- files.deleteRecursively(tmpdir1)
+    _ <- files.deleteRecursively(tmpdir2)
+  yield problems.map(p => Problem(Some(p.toString)))
+  end for
+end analyseFileCode
 
 object Server extends IOApp:
 
