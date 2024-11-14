@@ -16,21 +16,18 @@ def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
     Kleisli(request => logger.error("Request failed", request.toString, exc))
   }
 
-class TestServiceImpl(ref: Ref[IO, List[Test]]) extends TestService[IO]:
-  override def listTests(): IO[ListTestsOutput] =
-    ref.get.map(ListTestsOutput(_))
+enum Status:
+  case Completed(problems: List[Problem])
+  case InProgress(msg: String)
 
-  override def createTest(attributes: TestAttributes) =
-    Random
-      .scalaUtilRandom[IO]
-      .flatMap(_.nextInt)
-      .map(id => Test(id = TestId(id), attributes = attributes))
-      .flatTap(test => ref.update(_ :+ test))
-      .map(CreateTestOutput(_))
+case class State(comparison: Comparison, status: Status)
 
-end TestServiceImpl
+class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]]) extends MimaService[IO]:
+  override def createComparison(attributes: ComparisonAttributes) = ???
+  override def getComparison(id: ComparisonId) = ???
 
-def routesResource(service: TestService[IO]) =
+
+def routesResource(service: MimaService[IO]) =
   import org.http4s.implicits.*
   SimpleRestJsonBuilder
     .routes(service)

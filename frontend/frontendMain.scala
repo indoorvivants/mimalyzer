@@ -8,34 +8,34 @@ import scala.scalajs.js.Promise
 import org.scalajs.dom
 
 def createApiClient(uri: String) = SimpleRestJsonFetchClient(
-  TestService,
+  ComparisonService,
   uri
 ).make
 
-extension [T](p: => Promise[T]) def stream = EventStream.fromJsPromise(p)
+extension [T](p: => Promise[T]) inline def stream = EventStream.fromJsPromise(p)
 
 enum Action:
   case GenerateNewTest
 
-def renderTest(id: TestId, init: Test, signal: Signal[Test]) =
-  div(
-    cls := "flex flex-col gap-2 border-1 border-slate-100 p-4 rounded-xl",
-    p(
-      i("ID=", id.toString()),
-      p(
-        b("Title: "),
-        child.text <-- signal.map(_.attributes.title.value)
-      ),
-      p(
-        b("Description: "),
-        blockQuote(
-          child.maybe <-- signal.map(
-            _.attributes.description.map(_.value)
-          )
-        )
-      )
-    )
-  )
+// def renderTest(id: ComparisonId, init: , signal: Signal[Test]) =
+//   div(
+//     cls := "flex flex-col gap-2 border-1 border-slate-100 p-4 rounded-xl",
+//     p(
+//       i("ID=", id.toString()),
+//       p(
+//         b("Title: "),
+//         child.text <-- signal.map(_.attributes.title.value)
+//       ),
+//       p(
+//         b("Description: "),
+//         blockQuote(
+//           child.maybe <-- signal.map(
+//             _.attributes.description.map(_.value)
+//           )
+//         )
+//       )
+//     )
+//   )
 
 @main def hello =
   // State

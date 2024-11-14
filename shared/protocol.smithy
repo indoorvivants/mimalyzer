@@ -6,58 +6,72 @@ use alloy#simpleRestJson
 use alloy#uuidFormat
 
 @simpleRestJson
-service TestService {
+service MimaService {
   version: "1.0.0",
-  operations: [ListTests, CreateTest]
+  operations: [GetComparison, CreateComparison]
 }
 
 @readonly
-@http(method: "GET", uri: "/api/tests", code: 200)
-operation ListTests {
+@http(method: "GET", uri: "/api/comparison/{id}", code: 200)
+operation GetComparison {
+  input := {
+    @required
+    @httpLabel
+    id: ComparisonId
+  }
+
   output := {
     @required
-    tests: Tests
+    comparison: Comparison,
+
+    @required
+    problems: ProblemsList
   }
 }
 
 @idempotent
-@http(method: "PUT", uri: "/api/test", code: 200)
-operation CreateTest {
-  
+@http(method: "PUT", uri: "/api/comparison", code: 200)
+operation CreateComparison {
   input := {
     @required
-    attributes: TestAttributes
+    attributes: ComparisonAttributes
   }
 
   output := {
     @required
-    test: Test
+    comparisonId: ComparisonId 
   }
 }
 
 
-
-list Tests {
-  member: Test
+list ProblemsList {
+  member: Problem
 }
 
-structure Test {
-  @required
-  id: TestId
-
-  @required
-  attributes: TestAttributes
-
-  deleted: Boolean = false
+structure Problem {
+  message: String
 }
 
-structure TestAttributes {
-  @required
-  title: TestTitle
 
-  description: TestDescription
+structure Comparison {
+  @required
+  id: ComparisonId
+
+  @required
+  attributes: ComparisonAttributes
 }
 
-integer TestId
-string TestTitle
-string TestDescription
+structure ComparisonAttributes {
+  @required
+  beforeScalaCode: ScalaCode
+
+  @required
+  afterScalaCode: ScalaCode
+
+  @required
+  scalaVersion: ScalaVersion
+}
+
+integer ComparisonId
+string ScalaCode
+string ScalaVersion

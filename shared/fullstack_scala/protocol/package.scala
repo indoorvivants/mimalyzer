@@ -1,12 +1,12 @@
 package fullstack_scala
 
 package object protocol {
-  type TestService[F[_]] = smithy4s.kinds.FunctorAlgebra[TestServiceGen, F]
-  val TestService = TestServiceGen
+  type MimaService[F[_]] = smithy4s.kinds.FunctorAlgebra[MimaServiceGen, F]
+  val MimaService = MimaServiceGen
 
-  type TestTitle = fullstack_scala.protocol.TestTitle.Type
-  type TestDescription = fullstack_scala.protocol.TestDescription.Type
-  type TestId = fullstack_scala.protocol.TestId.Type
-  type Tests = fullstack_scala.protocol.Tests.Type
+  type ProblemsList = fullstack_scala.protocol.ProblemsList.Type
+  type ScalaCode = fullstack_scala.protocol.ScalaCode.Type
+  type ComparisonId = fullstack_scala.protocol.ComparisonId.Type
+  type ScalaVersion = fullstack_scala.protocol.ScalaVersion.Type
 
 }

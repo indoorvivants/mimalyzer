@@ -7,9 +7,9 @@ import smithy4s.ShapeId
 import smithy4s.schema.Schema.bijection
 import smithy4s.schema.Schema.int
 
-object TestId extends Newtype[Int] {
-  val id: ShapeId = ShapeId("fullstack_scala.protocol", "TestId")
+object ComparisonId extends Newtype[Int] {
+  val id: ShapeId = ShapeId("fullstack_scala.protocol", "ComparisonId")
   val hints: Hints = Hints.empty
   val underlyingSchema: Schema[Int] = int.withId(id).addHints(hints)
-  implicit val schema: Schema[TestId] = bijection(underlyingSchema, asBijection)
+  implicit val schema: Schema[ComparisonId] = bijection(underlyingSchema, asBijection)
 }

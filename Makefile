@@ -25,4 +25,4 @@ run-backend:
 	cd backend && scala-cli --power run -w . --restart -- 9999
 
 run-frontend:
-	cd frontend && npm run dev
+	cd frontend && npm install && npm run dev
