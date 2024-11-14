@@ -49,7 +49,7 @@ enum Action:
           good =>
             result.set(
               if good.problems.isEmpty then "NO PROBLEMS"
-              else "PROBLEMS\n" + good.problems.map(_.toString).mkString("\n")
+              else "PROBLEMS\n" + good.problems.flatMap(_.message).map("- " + _).mkString("\n")
             ),
           bad => result.set(s"ERROR: $bad")
         )
