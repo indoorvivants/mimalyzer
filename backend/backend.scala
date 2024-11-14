@@ -33,7 +33,7 @@ class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]])
         attributes.beforeScalaCode,
         attributes.afterScalaCode,
         attributes.scalaVersion
-      ).timeout(20.seconds).flatMap: problems =>
+      ).flatMap: problems =>
         ref.update(
           _.updated(
             id,

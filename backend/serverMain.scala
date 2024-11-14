@@ -44,6 +44,7 @@ def analyseFileCode(
           "compile",
           "old.scala",
           "-p",
+          "--server=false",
           "-S",
           scalaVersion.value
         )
@@ -58,6 +59,7 @@ def analyseFileCode(
           "compile",
           "new.scala",
           "-p",
+          "--server=false",
           "-S",
           scalaVersion.value
         )
