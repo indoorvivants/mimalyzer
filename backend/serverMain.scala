@@ -1,87 +1,12 @@
-package fullstack_scala
+package mimalyzer
 package backend
 
-import cats.effect.*
-import com.comcast.ip4s.Port
-import com.comcast.ip4s.host
+import com.comcast.ip4s.*
+import cats.effect.*, std.*
 import org.http4s.ember.server.EmberServerBuilder
+import fullstack_scala.protocol.ComparisonId
+import concurrent.duration.*
 
-import scala.concurrent.duration.*
-import fullstack_scala.protocol.*
-import fs2.io.file.Files
-import fs2.io.process.Processes, fs2.io.process.ProcessBuilder
-import java.io.File
-
-import com.typesafe.tools.mima.lib.MiMaLib
-import cats.effect.std.Mutex
-
-val files = Files[IO]
-val proc = Processes[IO]
-
-def analyseFileCode(
-    oldScala: ScalaCode,
-    newScala: ScalaCode,
-    scalaVersion: ScalaVersion
-) =
-  for
-    tmpdir1 <- files.createTempDirectory
-    tmpdir2 <- files.createTempDirectory
-    _ <- fs2
-      .Stream(oldScala.value)
-      .through(files.writeUtf8(tmpdir1.resolve("old.scala")))
-      .compile
-      .drain
-
-    _ <- fs2
-      .Stream(newScala.value)
-      .through(files.writeUtf8(tmpdir2.resolve("new.scala")))
-      .compile
-      .drain
-
-    proc1 <- proc
-      .spawn(
-        ProcessBuilder(
-          "scala-cli",
-          "compile",
-          "old.scala",
-          "-p",
-          "--server=false",
-          "-S",
-          scalaVersion.value
-        )
-          .withWorkingDirectory(tmpdir1)
-      )
-      .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
-
-    proc2 <- proc
-      .spawn(
-        ProcessBuilder(
-          "scala-cli",
-          "compile",
-          "new.scala",
-          "-p",
-          "--server=false",
-          "-S",
-          scalaVersion.value
-        )
-          .withWorkingDirectory(tmpdir2)
-      )
-      .use(_.stdout.through(fs2.text.utf8Decode).compile.string)
-
-    classes1 :: classpath1 = proc1.split(File.pathSeparatorChar).toList
-    classes2 :: classpath2 = proc2.split(File.pathSeparatorChar).toList
-
-    lib = new MiMaLib(classpath1.map(new File(_)))
-
-    problems <- IO.blocking(
-      lib.collectProblems(new File(classes1), new File(classes2), Nil)
-    )
-
-    _ <- files.deleteRecursively(tmpdir1)
-    _ <- files.deleteRecursively(tmpdir2)
-  yield problems.map(p => Problem(Some(p.toString)))
-  end for
-end analyseFileCode
 
 object Server extends IOApp:
 

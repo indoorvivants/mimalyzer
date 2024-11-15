@@ -1,17 +1,15 @@
-package fullstack_scala
+package mimalyzer
 package backend
 
 import cats.data.Kleisli
 import cats.effect.IO
+import cats.effect.Ref
+import cats.effect.std.Mutex
+import cats.effect.std.UUIDGen
 import fullstack_scala.protocol.*
 import org.http4s.HttpApp
 import scribe.Scribe
 import smithy4s.http4s.SimpleRestJsonBuilder
-import cats.effect.std.Random
-import cats.effect.Ref
-import cats.effect.std.UUIDGen
-import concurrent.duration.*
-import cats.effect.std.Mutex
 
 def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
   import cats.syntax.all.*

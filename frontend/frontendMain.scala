@@ -94,6 +94,14 @@ end stateful
               case _: InvalidScalaVersion =>
                 result.set("Invalid Scala version")
 
+              case e: CompilationFailed => 
+                val lab = e.which match
+                  case AFTER  => "New"
+                  case BEFORE => "Old"
+
+                result.set(s"$lab code failed to compile:\n\n${e.errorOut}")
+
+
               case other =>
                 result.set(s"ERROR: $bad")
         )
@@ -138,7 +146,7 @@ end stateful
             value <-- scalaVersion
           ),
           btn,
-          pre(code(child.text <-- result)),
+          pre(cls := "whitespace-pre-line", code(child.text <-- result)),
           handleEvents,
           saveState
         )

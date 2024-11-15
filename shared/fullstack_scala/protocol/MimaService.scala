@@ -110,17 +110,20 @@ object MimaServiceOperation {
     object project {
       def codeTooBig: Option[CodeTooBig] = CreateComparisonError.CodeTooBigCase.alt.project.lift(self).map(_.codeTooBig)
       def invalidScalaVersion: Option[InvalidScalaVersion] = CreateComparisonError.InvalidScalaVersionCase.alt.project.lift(self).map(_.invalidScalaVersion)
+      def compilationFailed: Option[CompilationFailed] = CreateComparisonError.CompilationFailedCase.alt.project.lift(self).map(_.compilationFailed)
     }
 
     def accept[A](visitor: CreateComparisonError.Visitor[A]): A = this match {
       case value: CreateComparisonError.CodeTooBigCase => visitor.codeTooBig(value.codeTooBig)
       case value: CreateComparisonError.InvalidScalaVersionCase => visitor.invalidScalaVersion(value.invalidScalaVersion)
+      case value: CreateComparisonError.CompilationFailedCase => visitor.compilationFailed(value.compilationFailed)
     }
   }
   object CreateComparisonError extends ErrorSchema.Companion[CreateComparisonError] {
 
     def codeTooBig(codeTooBig: CodeTooBig): CreateComparisonError = CodeTooBigCase(codeTooBig)
     def invalidScalaVersion(invalidScalaVersion: InvalidScalaVersion): CreateComparisonError = InvalidScalaVersionCase(invalidScalaVersion)
+    def compilationFailed(compilationFailed: CompilationFailed): CreateComparisonError = CompilationFailedCase(compilationFailed)
 
     val id: ShapeId = ShapeId("fullstack_scala.protocol", "CreateComparisonError")
 
@@ -128,6 +131,7 @@ object MimaServiceOperation {
 
     final case class CodeTooBigCase(codeTooBig: CodeTooBig) extends CreateComparisonError { final def $ordinal: Int = 0 }
     final case class InvalidScalaVersionCase(invalidScalaVersion: InvalidScalaVersion) extends CreateComparisonError { final def $ordinal: Int = 1 }
+    final case class CompilationFailedCase(compilationFailed: CompilationFailed) extends CreateComparisonError { final def $ordinal: Int = 2 }
 
     object CodeTooBigCase {
       val hints: Hints = Hints.empty
@@ -139,10 +143,16 @@ object MimaServiceOperation {
       val schema: Schema[CreateComparisonError.InvalidScalaVersionCase] = bijection(InvalidScalaVersion.schema.addHints(hints), CreateComparisonError.InvalidScalaVersionCase(_), _.invalidScalaVersion)
       val alt = schema.oneOf[CreateComparisonError]("InvalidScalaVersion")
     }
+    object CompilationFailedCase {
+      val hints: Hints = Hints.empty
+      val schema: Schema[CreateComparisonError.CompilationFailedCase] = bijection(CompilationFailed.schema.addHints(hints), CreateComparisonError.CompilationFailedCase(_), _.compilationFailed)
+      val alt = schema.oneOf[CreateComparisonError]("CompilationFailed")
+    }
 
     trait Visitor[A] {
       def codeTooBig(value: CodeTooBig): A
       def invalidScalaVersion(value: InvalidScalaVersion): A
+      def compilationFailed(value: CompilationFailed): A
     }
 
     object Visitor {
@@ -150,23 +160,27 @@ object MimaServiceOperation {
         def default: A
         def codeTooBig(value: CodeTooBig): A = default
         def invalidScalaVersion(value: InvalidScalaVersion): A = default
+        def compilationFailed(value: CompilationFailed): A = default
       }
     }
 
     implicit val schema: Schema[CreateComparisonError] = union(
       CreateComparisonError.CodeTooBigCase.alt,
       CreateComparisonError.InvalidScalaVersionCase.alt,
+      CreateComparisonError.CompilationFailedCase.alt,
     ){
       _.$ordinal
     }
     def liftError(throwable: Throwable): Option[CreateComparisonError] = throwable match {
       case e: CodeTooBig => Some(CreateComparisonError.CodeTooBigCase(e))
       case e: InvalidScalaVersion => Some(CreateComparisonError.InvalidScalaVersionCase(e))
+      case e: CompilationFailed => Some(CreateComparisonError.CompilationFailedCase(e))
       case _ => None
     }
     def unliftError(e: CreateComparisonError): Throwable = e match {
       case CreateComparisonError.CodeTooBigCase(e) => e
       case CreateComparisonError.InvalidScalaVersionCase(e) => e
+      case CreateComparisonError.CompilationFailedCase(e) => e
     }
   }
 }

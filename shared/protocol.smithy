@@ -45,7 +45,7 @@ operation CreateComparison {
     problems: ProblemsList 
   }
 
-  errors: [CodeTooBig, InvalidScalaVersion]
+  errors: [CodeTooBig, InvalidScalaVersion, CompilationFailed]
 }
 
 
@@ -64,6 +64,17 @@ structure CodeTooBig {
 
   @required 
   which: CodeLabel
+}
+
+@error("client")
+@httpError(400)
+structure CompilationFailed {
+
+  @required 
+  which: CodeLabel
+
+  @required
+  errorOut: String
 }
 
 enum CodeLabel {
