@@ -11,6 +11,7 @@ import cats.effect.std.Random
 import cats.effect.Ref
 import cats.effect.std.UUIDGen
 import concurrent.duration.*
+import cats.effect.std.Mutex
 
 def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
   import cats.syntax.all.*
@@ -24,22 +25,26 @@ enum Status:
 
 case class State(comparison: Comparison, status: Status)
 
-class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]])
+class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]], mutex: Mutex[IO])
     extends MimaService[IO]:
   val randomID = UUIDGen[IO].randomUUID.map(ComparisonId(_))
   override def createComparison(attributes: ComparisonAttributes) =
     randomID.flatMap: id =>
-      analyseFileCode(
-        attributes.beforeScalaCode,
-        attributes.afterScalaCode,
-        attributes.scalaVersion
-      ).flatMap: problems =>
-        ref.update(
-          _.updated(
-            id,
-            State(Comparison(id, attributes), Status.Completed(problems))
+      mutex.lock
+        .surround(
+          analyseFileCode(
+            attributes.beforeScalaCode,
+            attributes.afterScalaCode,
+            attributes.scalaVersion
           )
-        ) *>
+        )
+        .flatMap: problems =>
+          // ref.update(
+          //   _.updated(
+          //     id,
+          //     State(Comparison(id, attributes), Status.Completed(problems))
+          //   )
+          // ) *>
           IO.pure(CreateComparisonOutput(id, problems))
   override def getComparison(id: ComparisonId) = ???
 end TestServiceImpl

@@ -13,6 +13,7 @@ import fs2.io.process.Processes, fs2.io.process.ProcessBuilder
 import java.io.File
 
 import com.typesafe.tools.mima.lib.MiMaLib
+import cats.effect.std.Mutex
 
 val files = Files[IO]
 val proc = Processes[IO]
@@ -92,8 +93,9 @@ object Server extends IOApp:
 
     val server =
       for
-        ref <- IO.ref(DUMMY_DATA).toResource
-        routes <- routesResource(TestServiceImpl(ref))
+        ref <- IO.ref(Map.empty[ComparisonId, State]).toResource
+        mutex <- Mutex[IO].toResource
+        routes <- routesResource(TestServiceImpl(ref, mutex))
         server <- EmberServerBuilder
           .default[IO]
           .withPort(port)
@@ -109,8 +111,4 @@ object Server extends IOApp:
       .as(ExitCode.Success)
 
   end run
-
-  val DUMMY_DATA =
-    Map.empty[ComparisonId, State]
-
 end Server
