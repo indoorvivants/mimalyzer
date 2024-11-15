@@ -1,4 +1,4 @@
-FROM node:22 as build
+FROM node:22 as frontend-build
 
 WORKDIR /usr/local/bin
 
@@ -16,9 +16,28 @@ WORKDIR /source/frontend
 COPY frontend/ .
 RUN npm install && npm run build
 
+
+# Build backend
+
+FROM eclipse-temurin:21 as backend-build
+
+WORKDIR /usr/local/bin
+
+RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh && \
+    mv scala-cli.sh scala-cli && \
+    chmod +x scala-cli && \
+    scala-cli config power true && \
+    scala-cli version && \
+    echo '@main def hello = println(42)' | scala-cli run _ -S 3.5.2
+
+WORKDIR /source
+COPY shared shared
+
 WORKDIR /source/backend
 COPY backend/ .
 RUN scala-cli package . --assembly -f -o ./backend-assembly
+
+# Final container build
 
 FROM nginx
 
@@ -32,12 +51,13 @@ RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh
     chmod +x /usr/local/bin/scala-cli && \
     scala-cli config power true && \
     scala-cli version && \
-    echo '@main def hello = println(42)' | scala-cli run _
+    echo '@main def hello = println(42)' | scala-cli run _ -S 3.5.2
 
 COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./nginx/entrypoint.sh /app/entrypoint.sh
-COPY --from=build /source/backend/backend-assembly /app/backend
-COPY --from=build /source/frontend/dist /app/frontend
+
+COPY --from=backend-build /source/backend/backend-assembly /app/backend
+COPY --from=frontend-build /source/frontend/dist /app/frontend
 
 EXPOSE 80
 
