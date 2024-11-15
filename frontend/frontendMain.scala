@@ -6,6 +6,8 @@ import smithy4s_fetch.SimpleRestJsonFetchClient
 import com.raquo.laminar.api.L.*
 import scala.scalajs.js.Promise
 import org.scalajs.dom
+import fullstack_scala.protocol.CodeLabel.AFTER
+import fullstack_scala.protocol.CodeLabel.BEFORE
 
 def createApiClient(uri: String) = SimpleRestJsonFetchClient(
   MimaService,
@@ -17,16 +19,39 @@ extension [T](p: => Promise[T]) inline def stream = EventStream.fromJsPromise(p)
 enum Action:
   case Submit
 
+def stateful(key: String, default: String) =
+  val v = Var(
+    Option(dom.window.localStorage.getItem(key))
+      .getOrElse(default)
+  )
+
+  val b = v --> { value =>
+    dom.window.localStorage.setItem(key, value)
+  }
+
+  v -> b
+end stateful
+
 @main def hello =
-  // State
-  val oldScalaCode = Var("class X{val x: Int = ???}")
-  val newScalaCode = Var("class X{def y: Int = ???}")
-  val scalaVersion = Var("2.13.15")
+  val (oldScalaCode, oldSave) =
+    stateful("old-scala-code", "class X {def x: Int = ???}")
+
+  val (newScalaCode, newSave) =
+    stateful("new-scala-code", "class X {def y: Int = ???}")
+
+  val (scalaVersion, versionSave) = stateful("scala-version", "2.13.15")
+
   val result = Var("")
   val actionBus = EventBus[Action]()
-  val inprogress = Var(false)
 
   val apiClient = createApiClient(dom.window.location.href)
+
+  val saveState =
+    Seq(
+      oldSave,
+      newSave,
+      versionSave
+    )
 
   val handleEvents =
     actionBus.events.withCurrentValueOf(
@@ -49,13 +74,31 @@ enum Action:
           good =>
             result.set(
               if good.problems.isEmpty then "NO PROBLEMS"
-              else "PROBLEMS\n" + good.problems.flatMap(_.message).map("- " + _).mkString("\n")
+              else
+                "PROBLEMS\n" + good.problems
+                  .flatMap(_.message)
+                  .map("- " + _)
+                  .mkString("\n")
             ),
-          bad => result.set(s"ERROR: $bad")
+          bad =>
+            bad match
+              case e: CodeTooBig =>
+                val lab = e.which match
+                  case AFTER  => "New"
+                  case BEFORE => "Old"
+
+                result.set(
+                  s"$lab code too big: size [${e.sizeBytes}] is larger than allowed [${e.maxSizeBytes}]"
+                )
+
+              case _: InvalidScalaVersion =>
+                result.set("Invalid Scala version")
+
+              case other =>
+                result.set(s"ERROR: $bad")
         )
 
     }
-
 
   val btn =
     button(
@@ -66,7 +109,7 @@ enum Action:
 
   val app =
     div(
-      cls := "content mx-auto w-6/12 rounded-lg border-2 border-slate-400 p-4",
+      cls := "content mx-auto w-8/12",
       p("Mimalyzer", cls := "text-2xl m-2"),
       div(
         cls := "flex gap-4",
@@ -76,19 +119,19 @@ enum Action:
         ),
         div(
           cls := "w-full",
-          h2("Old Scala code"),
+          h2("Old Scala code", cls := "font-bold"),
           textArea(
             cls := "w-full border-2 border-slate-400",
             onInput.mapToValue --> oldScalaCode,
             value <-- oldScalaCode
           ),
-          h2("New Scala code"),
+          h2("New Scala code", cls := "font-bold"),
           textArea(
             cls := "w-full border-2 border-slate-400",
             onInput.mapToValue --> newScalaCode,
             value <-- newScalaCode
           ),
-          h2("Scala version"),
+          h2("Scala version", cls := "font-bold"),
           input(
             cls := "w-full border-2 border-slate-400",
             onInput.mapToValue --> scalaVersion,
@@ -96,7 +139,8 @@ enum Action:
           ),
           btn,
           pre(code(child.text <-- result)),
-          handleEvents
+          handleEvents,
+          saveState
         )
       )
     )

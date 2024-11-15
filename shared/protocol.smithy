@@ -44,6 +44,31 @@ operation CreateComparison {
     @required
     problems: ProblemsList 
   }
+
+  errors: [CodeTooBig, InvalidScalaVersion]
+}
+
+
+@error("client")
+@httpError(400)
+structure InvalidScalaVersion {}
+
+@error("client")
+@httpError(400)
+structure CodeTooBig {
+  @required
+  sizeBytes: Integer
+
+  @required
+  maxSizeBytes: Integer
+
+  @required 
+  which: CodeLabel
+}
+
+enum CodeLabel {
+  AFTER
+  BEFORE
 }
 
 

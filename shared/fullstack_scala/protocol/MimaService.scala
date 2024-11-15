@@ -8,13 +8,16 @@ import smithy4s.ShapeId
 import smithy4s.Transformation
 import smithy4s.kinds.PolyFunction5
 import smithy4s.kinds.toPolyFunction5.const5
+import smithy4s.schema.ErrorSchema
 import smithy4s.schema.OperationSchema
+import smithy4s.schema.Schema.bijection
+import smithy4s.schema.Schema.union
 
 trait MimaServiceGen[F[_, _, _, _, _]] {
   self =>
 
   def getComparison(id: ComparisonId): F[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing]
-  def createComparison(attributes: ComparisonAttributes): F[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing]
+  def createComparison(attributes: ComparisonAttributes): F[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing]
 
   def transform: Transformation.PartiallyApplied[MimaServiceGen[F]] = Transformation.of[MimaServiceGen[F]](this)
 }
@@ -50,6 +53,8 @@ object MimaServiceGen extends Service.Mixin[MimaServiceGen, MimaServiceOperation
   def fromPolyFunction[P[_, _, _, _, _]](f: PolyFunction5[MimaServiceOperation, P]): MimaServiceGen[P] = new MimaServiceOperation.Transformed(reified, f)
   def toPolyFunction[P[_, _, _, _, _]](impl: MimaServiceGen[P]): PolyFunction5[MimaServiceOperation, P] = MimaServiceOperation.toPolyFunction(impl)
 
+  type CreateComparisonError = MimaServiceOperation.CreateComparisonError
+  val CreateComparisonError = MimaServiceOperation.CreateComparisonError
 }
 
 sealed trait MimaServiceOperation[Input, Err, Output, StreamedInput, StreamedOutput] {
@@ -67,7 +72,7 @@ object MimaServiceOperation {
   }
   class Transformed[P[_, _, _, _, _], P1[_ ,_ ,_ ,_ ,_]](alg: MimaServiceGen[P], f: PolyFunction5[P, P1]) extends MimaServiceGen[P1] {
     def getComparison(id: ComparisonId): P1[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = f[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing](alg.getComparison(id))
-    def createComparison(attributes: ComparisonAttributes): P1[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] = f[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing](alg.createComparison(attributes))
+    def createComparison(attributes: ComparisonAttributes): P1[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = f[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing](alg.createComparison(attributes))
   }
 
   def toPolyFunction[P[_, _, _, _, _]](impl: MimaServiceGen[P]): PolyFunction5[MimaServiceOperation, P] = new PolyFunction5[MimaServiceOperation, P] {
@@ -85,17 +90,84 @@ object MimaServiceOperation {
       .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("GET"), uri = smithy.api.NonEmptyString("/api/comparison/{id}"), code = 200), smithy.api.Readonly())
     def wrap(input: GetComparisonInput): GetComparison = GetComparison(input)
   }
-  final case class CreateComparison(input: CreateComparisonInput) extends MimaServiceOperation[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] {
-    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] = impl.createComparison(input.attributes)
+  final case class CreateComparison(input: CreateComparisonInput) extends MimaServiceOperation[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] {
+    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = impl.createComparison(input.attributes)
     def ordinal: Int = 1
-    def endpoint: smithy4s.Endpoint[MimaServiceOperation,CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] = CreateComparison
+    def endpoint: smithy4s.Endpoint[MimaServiceOperation,CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = CreateComparison
   }
-  object CreateComparison extends smithy4s.Endpoint[MimaServiceOperation,CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] {
-    val schema: OperationSchema[CreateComparisonInput, Nothing, CreateComparisonOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "CreateComparison"))
+  object CreateComparison extends smithy4s.Endpoint[MimaServiceOperation,CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] {
+    val schema: OperationSchema[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "CreateComparison"))
       .withInput(CreateComparisonInput.schema)
+      .withError(CreateComparisonError.errorSchema)
       .withOutput(CreateComparisonOutput.schema)
       .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("PUT"), uri = smithy.api.NonEmptyString("/api/comparison"), code = 200), smithy.api.Idempotent())
     def wrap(input: CreateComparisonInput): CreateComparison = CreateComparison(input)
+  }
+  sealed trait CreateComparisonError extends scala.Product with scala.Serializable { self =>
+    @inline final def widen: CreateComparisonError = this
+    def $ordinal: Int
+
+    object project {
+      def codeTooBig: Option[CodeTooBig] = CreateComparisonError.CodeTooBigCase.alt.project.lift(self).map(_.codeTooBig)
+      def invalidScalaVersion: Option[InvalidScalaVersion] = CreateComparisonError.InvalidScalaVersionCase.alt.project.lift(self).map(_.invalidScalaVersion)
+    }
+
+    def accept[A](visitor: CreateComparisonError.Visitor[A]): A = this match {
+      case value: CreateComparisonError.CodeTooBigCase => visitor.codeTooBig(value.codeTooBig)
+      case value: CreateComparisonError.InvalidScalaVersionCase => visitor.invalidScalaVersion(value.invalidScalaVersion)
+    }
+  }
+  object CreateComparisonError extends ErrorSchema.Companion[CreateComparisonError] {
+
+    def codeTooBig(codeTooBig: CodeTooBig): CreateComparisonError = CodeTooBigCase(codeTooBig)
+    def invalidScalaVersion(invalidScalaVersion: InvalidScalaVersion): CreateComparisonError = InvalidScalaVersionCase(invalidScalaVersion)
+
+    val id: ShapeId = ShapeId("fullstack_scala.protocol", "CreateComparisonError")
+
+    val hints: Hints = Hints.empty
+
+    final case class CodeTooBigCase(codeTooBig: CodeTooBig) extends CreateComparisonError { final def $ordinal: Int = 0 }
+    final case class InvalidScalaVersionCase(invalidScalaVersion: InvalidScalaVersion) extends CreateComparisonError { final def $ordinal: Int = 1 }
+
+    object CodeTooBigCase {
+      val hints: Hints = Hints.empty
+      val schema: Schema[CreateComparisonError.CodeTooBigCase] = bijection(CodeTooBig.schema.addHints(hints), CreateComparisonError.CodeTooBigCase(_), _.codeTooBig)
+      val alt = schema.oneOf[CreateComparisonError]("CodeTooBig")
+    }
+    object InvalidScalaVersionCase {
+      val hints: Hints = Hints.empty
+      val schema: Schema[CreateComparisonError.InvalidScalaVersionCase] = bijection(InvalidScalaVersion.schema.addHints(hints), CreateComparisonError.InvalidScalaVersionCase(_), _.invalidScalaVersion)
+      val alt = schema.oneOf[CreateComparisonError]("InvalidScalaVersion")
+    }
+
+    trait Visitor[A] {
+      def codeTooBig(value: CodeTooBig): A
+      def invalidScalaVersion(value: InvalidScalaVersion): A
+    }
+
+    object Visitor {
+      trait Default[A] extends Visitor[A] {
+        def default: A
+        def codeTooBig(value: CodeTooBig): A = default
+        def invalidScalaVersion(value: InvalidScalaVersion): A = default
+      }
+    }
+
+    implicit val schema: Schema[CreateComparisonError] = union(
+      CreateComparisonError.CodeTooBigCase.alt,
+      CreateComparisonError.InvalidScalaVersionCase.alt,
+    ){
+      _.$ordinal
+    }
+    def liftError(throwable: Throwable): Option[CreateComparisonError] = throwable match {
+      case e: CodeTooBig => Some(CreateComparisonError.CodeTooBigCase(e))
+      case e: InvalidScalaVersion => Some(CreateComparisonError.InvalidScalaVersionCase(e))
+      case _ => None
+    }
+    def unliftError(e: CreateComparisonError): Throwable = e match {
+      case CreateComparisonError.CodeTooBigCase(e) => e
+      case CreateComparisonError.InvalidScalaVersionCase(e) => e
+    }
   }
 }
 
