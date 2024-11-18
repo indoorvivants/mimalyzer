@@ -1,5 +1,10 @@
 {
-    "mavenDependencies": [
-        "com.disneystreaming.alloy:alloy-core:latest.stable"
-    ]
+    "version": "1",
+    "maven": {
+        "dependencies": [
+          "com.disneystreaming.alloy:alloy-core:0.3.14"
+        ]
+    },
+    "sources": ["protocol.smithy"]
 }
+
