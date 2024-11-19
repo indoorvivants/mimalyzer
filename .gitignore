@@ -1,6 +1,7 @@
 # Logs
 logs
 *.log
+**/*.jar
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -31,3 +32,4 @@ scalajs-frontend.js
 *.semanticdb
 db.json
 *.map
+.dev

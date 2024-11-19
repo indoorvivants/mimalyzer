@@ -7,3 +7,4 @@
 //> using scala 3.5.2
 //> using option -experimental -Wunused:all
 //> using dep com.typesafe::mima-core:1.1.4
+//> using file ../compiler-interface/

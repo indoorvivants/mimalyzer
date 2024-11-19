@@ -1,0 +1,7 @@
+procs:
+  backend: "make run-backend"
+  scala213bridge: "make watch-scala213bridge"
+  scala212bridge: "make watch-scala212bridge"
+  scala3bridge: "make watch-scala3bridge"
+  frontend: "make run-frontend"
+  smithy4s: "make watch-smithy4s"

@@ -114,4 +114,9 @@ structure ComparisonAttributes {
 @uuidFormat
 string ComparisonId
 string ScalaCode
-string ScalaVersion
+
+enum ScalaVersion {
+    SCALA_212 = "2.12"
+    SCALA_213 = "2.13"
+    SCALA_3_LTS = "3 LTS"
+}

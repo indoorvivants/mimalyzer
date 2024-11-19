@@ -10,6 +10,11 @@ import fullstack_scala.protocol.*
 import org.http4s.HttpApp
 import scribe.Scribe
 import smithy4s.http4s.SimpleRestJsonBuilder
+import mimalyzer.iface.CompilerInterface
+import fullstack_scala.protocol.ScalaVersion.SCALA_212
+import fullstack_scala.protocol.ScalaVersion.SCALA_213
+import fullstack_scala.protocol.ScalaVersion.SCALA_3_LTS
+import scala.concurrent.ExecutionContext
 
 def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
   import cats.syntax.all.*
@@ -23,8 +28,12 @@ enum Status:
 
 case class State(comparison: Comparison, status: Status)
 
-class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]], mutex: Mutex[IO])
-    extends MimaService[IO]:
+class TestServiceImpl(
+    ref: Ref[IO, Map[ComparisonId, State]],
+    mutex: Mutex[IO],
+    compilers: Compilers,
+    singleThread: ExecutionContext
+) extends MimaService[IO]:
   val randomID = UUIDGen[IO].randomUUID.map(ComparisonId(_))
 
   private def checkCode(code: ScalaCode, label: CodeLabel) =
@@ -32,16 +41,7 @@ class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]], mutex: Mutex[IO])
     val len = code.value.getBytes().length
     IO.raiseWhen(len > MAX_SIZE)(CodeTooBig(len, MAX_SIZE, label))
 
-  private def checkScalaVersion(vers: ScalaVersion) =
-    val twelve = raw"2.12.(\d{1,2})".r
-    val thirteen = raw"2.13.(\d{1,2})".r
-    val three = raw"3.(\d{1,2}).(\d{1,2})".r
-    val rgx = s"$twelve|$thirteen|$three".r
-
-    IO.raiseUnless(rgx.matches(vers.value))(InvalidScalaVersion())
-
   override def createComparison(attributes: ComparisonAttributes) =
-    checkScalaVersion(attributes.scalaVersion) *>
     checkCode(attributes.beforeScalaCode, CodeLabel.BEFORE) *>
       checkCode(attributes.afterScalaCode, CodeLabel.AFTER) *>
       randomID.flatMap: id =>
@@ -50,7 +50,11 @@ class TestServiceImpl(ref: Ref[IO, Map[ComparisonId, State]], mutex: Mutex[IO])
             analyseFileCode(
               attributes.beforeScalaCode,
               attributes.afterScalaCode,
-              attributes.scalaVersion
+              attributes.scalaVersion match
+                case SCALA_213   => compilers.scala213
+                case SCALA_212   => compilers.scala212
+                case SCALA_3_LTS => compilers.scala3,
+              singleThread
             )
           )
           .flatMap: problems =>

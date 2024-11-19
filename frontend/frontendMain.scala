@@ -39,7 +39,8 @@ end stateful
   val (newScalaCode, newSave) =
     stateful("new-scala-code", "class X {def y: Int = ???}")
 
-  val (scalaVersion, versionSave) = stateful("scala-version", "2.13.15")
+  val (scalaVersion, versionSave) =
+    stateful("scala-version-enum", ScalaVersion.SCALA_213.value)
 
   val result = Var("")
   val actionBus = EventBus[Action]()
@@ -63,7 +64,7 @@ end stateful
         ComparisonAttributes(
           beforeScalaCode = ScalaCode(old),
           afterScalaCode = ScalaCode(nw),
-          scalaVersion = ScalaVersion(sv)
+          scalaVersion = ScalaVersion.values.find(_.value == sv).get
         )
 
       result.set("WAITING....")
@@ -94,13 +95,18 @@ end stateful
               case _: InvalidScalaVersion =>
                 result.set("Invalid Scala version")
 
-              case e: CompilationFailed => 
+              case err: smithy4s.http.UnknownErrorResponse =>
+                if err.code == 502 then
+                  result.set(
+                    "SERVICE UNAVAILABLE: Looks like Fly.io killed the server - wait for a couple seconds and press the button again"
+                  )
+
+              case e: CompilationFailed =>
                 val lab = e.which match
                   case AFTER  => "New"
                   case BEFORE => "Old"
 
                 result.set(s"$lab code failed to compile:\n\n${e.errorOut}")
-
 
               case other =>
                 result.set(s"ERROR: $bad")
@@ -140,10 +146,15 @@ end stateful
             value <-- newScalaCode
           ),
           h2("Scala version", cls := "font-bold"),
-          input(
-            cls := "w-full border-2 border-slate-400",
-            onInput.mapToValue --> scalaVersion,
-            value <-- scalaVersion
+          select(
+            cls := "w-full border-2 border-slate-400 text-lg",
+            ScalaVersion.values.map: sv =>
+              option(
+                value := sv.value,
+                sv.value,
+                selected <-- scalaVersion.signal.map(_ == sv.value)
+              ),
+            onInput.mapToValue --> scalaVersion
           ),
           btn,
           pre(cls := "whitespace-pre-line", code(child.text <-- result)),

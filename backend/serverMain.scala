@@ -6,7 +6,8 @@ import cats.effect.*, std.*
 import org.http4s.ember.server.EmberServerBuilder
 import fullstack_scala.protocol.ComparisonId
 import concurrent.duration.*
-
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
 
 object Server extends IOApp:
 
@@ -19,8 +20,19 @@ object Server extends IOApp:
     val server =
       for
         ref <- IO.ref(Map.empty[ComparisonId, State]).toResource
+        env <- IO.envForIO.entries.map(_.toMap).toResource
+        scala213 <- IO(Scala213Compiler.load(env)).toResource
+        scala212 <- IO(Scala212Compiler.load(env)).toResource
+        scala3 <- IO(Scala3Compiler.load(env)).toResource
+        singleThreadEC <- Resource
+          .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
+          .map(ExecutionContext.fromExecutorService)
+
         mutex <- Mutex[IO].toResource
-        routes <- routesResource(TestServiceImpl(ref, mutex))
+        compilers = Compilers(scala213, scala212, scala3)
+        routes <- routesResource(
+          TestServiceImpl(ref, mutex, compilers, singleThreadEC)
+        )
         server <- EmberServerBuilder
           .default[IO]
           .withPort(port)

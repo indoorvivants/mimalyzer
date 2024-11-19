@@ -16,85 +16,67 @@ import cats.effect.std.Mutex
 import scribe.cats.io as log
 
 import fullstack_scala.protocol.{CompilationFailed, CodeLabel}
+import mimalyzer.iface.*
+import java.util.concurrent.Executor
+import scala.concurrent.ExecutionContext
 
 val files = Files[IO]
 val proc = Processes[IO]
 
-case class ProcOut(exitCode: Int, stdout: String, stderr: String)
-object ProcOut:
-  def collect(proc: fs2.io.process.Process[IO]) =
-    import cats.syntax.all.*
-    (
-      proc.exitValue,
-      proc.stdout.through(fs2.text.utf8Decode).compile.string,
-      proc.stderr.through(fs2.text.utf8Decode).compile.string
-    ).mapN(ProcOut.apply)
+extension (c: CompilationError)
+  def render =
+    s"[LINE=${c.line}, COLUMN=${c.column}] ${c.msg}"
 
 def analyseFileCode(
     oldScala: ScalaCode,
     newScala: ScalaCode,
-    scalaVersion: ScalaVersion
+    compiler: CompilerInterface,
+    singleThreadExecutor: ExecutionContext
 ) =
   for
     tmpdir1 <- files.createTempDirectory
     tmpdir2 <- files.createTempDirectory
-    _ <- fs2
-      .Stream(oldScala.value)
-      .through(files.writeUtf8(tmpdir1.resolve("old.scala")))
-      .compile
-      .drain
 
-    _ <- fs2
-      .Stream(newScala.value)
-      .through(files.writeUtf8(tmpdir2.resolve("new.scala")))
-      .compile
-      .drain
-
-    proc1 <- proc
-      .spawn(
-        ProcessBuilder(
-          "scala-cli",
-          "compile",
-          "old.scala",
-          "-p",
-          "--server=false",
-          "-S",
-          scalaVersion.value
-        )
-          .withWorkingDirectory(tmpdir1)
+    proc1 <- IO(
+      compiler.compile(
+        "old.scala",
+        oldScala.value,
+        tmpdir1.toNioPath.toAbsolutePath().toString()
       )
-      .use(ProcOut.collect)
+    )
+      .evalOn(singleThreadExecutor)
 
-    _ <- IO.raiseWhen(proc1.exitCode != 0)(
-      CompilationFailed(CodeLabel.BEFORE, proc1.stderr)
+    proc2 <- IO(
+      compiler.compile(
+        "new.scala",
+        newScala.value,
+        tmpdir2.toNioPath.toAbsolutePath().toString()
+      )
+    )
+      .evalOn(singleThreadExecutor)
+
+    _ <- IO.raiseWhen(proc1.errors().nonEmpty)(
+      CompilationFailed(
+        CodeLabel.BEFORE,
+        proc1.errors().map(_.render).mkString("\n")
+      )
     )
 
-    proc2 <- proc
-      .spawn(
-        ProcessBuilder(
-          "scala-cli",
-          "compile",
-          "new.scala",
-          "-p",
-          "--server=false",
-          "-S",
-          scalaVersion.value
-        )
-          .withWorkingDirectory(tmpdir2)
+    _ <- IO.raiseWhen(proc2.errors().nonEmpty)(
+      CompilationFailed(
+        CodeLabel.AFTER,
+        proc2.errors().map(_.render).mkString("\n")
       )
-      .use(ProcOut.collect)
-
-    _ <- IO.raiseWhen(proc2.exitCode != 0)(
-      CompilationFailed(CodeLabel.AFTER, proc2.stderr)
     )
 
-    classes1 :: classpath1 = proc1.stdout.split(File.pathSeparatorChar).toList
-    classes2 :: classpath2 = proc2.stdout.split(File.pathSeparatorChar).toList
-
-    lib = new MiMaLib(classpath1.map(new File(_)))
+    lib = new MiMaLib(proc1.classpath().map(new File(_)))
 
     problems <- IO.blocking(
-      lib.collectProblems(new File(classes1), new File(classes2), Nil)
+      lib.collectProblems(
+        tmpdir1.toNioPath.toFile(),
+        tmpdir2.toNioPath.toFile(),
+        Nil
+      )
     )
 
     _ <- files.deleteRecursively(tmpdir1)
