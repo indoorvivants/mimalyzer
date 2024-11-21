@@ -11,6 +11,10 @@ import tastymima.intf.Config
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext
+import java.nio.file.Path
+import java.nio.file.FileSystems
+import java.net.URI
+import tastyquery.jdk.ClasspathLoaders
 
 val files = Files[IO]
 val proc = Processes[IO]
@@ -66,12 +70,10 @@ def analyseFileCode(
 
     entryBefore = classDirOld.toNioPath
     entryAfter = classDirNew.toNioPath
-
     classpathBefore = compiledOld.classpath().map(Paths.get(_)).toList
     classpathAfter = compiledNew.classpath().map(Paths.get(_)).toList
 
     mima = new MiMaLib(classpathBefore.map(_.toFile))
-
     problems <- IO.blocking(
       mima.collectProblems(
         entryBefore.toFile(),
@@ -81,13 +83,12 @@ def analyseFileCode(
     )
 
     tastymima = new TastyMiMa(new Config)
-
     tastyProblems <- IO.blocking(
       Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
         tastymima.analyze(
-          oldClasspath = entryBefore +: classpathBefore,
-          oldClasspathEntry = entryBefore, 
-          newClasspath = entryAfter +: classpathAfter,
+          oldClasspath = javaLib ::: entryBefore +: classpathBefore,
+          oldClasspathEntry = entryBefore,
+          newClasspath = javaLib ::: entryAfter +: classpathAfter,
           newClasspathEntry = entryAfter
         )
     )
@@ -103,3 +104,26 @@ def analyseFileCode(
   )
   end for
 end analyseFileCode
+
+lazy val javaLib: List[Path] =
+  System.getProperty("sun.boot.class.path") match
+    case null =>
+      List(
+        FileSystems
+          .getFileSystem(java.net.URI.create("jrt:/"))
+          .getPath("modules", "java.base")
+      )
+
+    case bootClasspath =>
+      val rtJarFile = bootClasspath
+        .split(java.io.File.pathSeparatorChar)
+        .find { path =>
+          new java.io.File(path).getName() == "rt.jar"
+        }
+        .getOrElse {
+          throw new RuntimeException(
+            s"cannot find rt.jar in $bootClasspath"
+          )
+        }
+      List(Paths.get(rtJarFile))
+end javaLib
