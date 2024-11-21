@@ -6,12 +6,11 @@ import fs2.io.file.Files
 import fs2.io.process.Processes
 import fullstack_scala.protocol.{CodeLabel, CompilationFailed, *}
 import mimalyzer.iface.*
-
-import java.io.File
-import scala.concurrent.ExecutionContext
 import tastymima.TastyMiMa
 import tastymima.intf.Config
+
 import java.nio.file.Paths
+import scala.concurrent.ExecutionContext
 
 val files = Files[IO]
 val proc = Processes[IO]
@@ -19,24 +18,6 @@ val proc = Processes[IO]
 extension (c: CompilationError)
   def render =
     s"[LINE=${c.line}, COLUMN=${c.column}] ${c.msg}"
-
-// case class CompiledFile(
-//   output: java.nio.file.Path,
-//   classpath: Array[java.nio.file.Path]
-// )
-
-// def mima(before: CompiledFile, after: CompiledFile) =
-//   val lib = new MiMaLib(before.classpath.map(_.toFile))
-//   for
-//     problems <- IO.blocking(
-//       lib.collectProblems(
-//         before.output.toFile,
-//         after.output.toFile,
-//         Nil
-//       )
-//     )
-//   yield problems.map(p => Problem(Some(p.toString)))
-//   end for
 
 case class Summary(mima: List[Problem], tasty: List[Problem])
 
@@ -101,9 +82,6 @@ def analyseFileCode(
 
     tastymima = new TastyMiMa(new Config)
 
-    _ = assert(java.nio.file.Files.exists(entryAfter.resolve("X.class")))
-    _ = assert(java.nio.file.Files.exists(entryAfter.resolve("X.tasty")))
-
     tastyProblems <- IO.blocking(
       Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
         tastymima.analyze(
@@ -117,8 +95,8 @@ def analyseFileCode(
     _ = println(classDirOld)
     _ = println(classDirNew)
 
-    // _ <- files.deleteRecursively(classDirOld)
-    // _ <- files.deleteRecursively(classDirNew)
+    _ <- files.deleteRecursively(classDirOld)
+    _ <- files.deleteRecursively(classDirNew)
   yield Summary(
     mima = problems.map(p => Problem(Some(p.toString))),
     tasty = tastyProblems.toList.flatten.map(p => Problem(Some(p.toString)))
