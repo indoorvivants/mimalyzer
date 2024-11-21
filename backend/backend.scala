@@ -2,18 +2,14 @@ package mimalyzer
 package backend
 
 import cats.data.Kleisli
-import cats.effect.IO
-import cats.effect.Ref
-import cats.effect.std.Mutex
-import cats.effect.std.UUIDGen
+import cats.effect.std.{Mutex, UUIDGen}
+import cats.effect.{IO, Ref}
 import fullstack_scala.protocol.*
+import fullstack_scala.protocol.ScalaVersion.{SCALA_212, SCALA_213, SCALA_3_LTS}
 import org.http4s.HttpApp
 import scribe.Scribe
 import smithy4s.http4s.SimpleRestJsonBuilder
-import mimalyzer.iface.CompilerInterface
-import fullstack_scala.protocol.ScalaVersion.SCALA_212
-import fullstack_scala.protocol.ScalaVersion.SCALA_213
-import fullstack_scala.protocol.ScalaVersion.SCALA_3_LTS
+
 import scala.concurrent.ExecutionContext
 
 def handleErrors(logger: Scribe[IO], routes: HttpApp[IO]): HttpApp[IO] =
@@ -54,17 +50,16 @@ class TestServiceImpl(
                 case SCALA_213   => compilers.scala213
                 case SCALA_212   => compilers.scala212
                 case SCALA_3_LTS => compilers.scala3,
-              singleThread
+              singleThread,
+              attributes.scalaVersion
             )
           )
-          .flatMap: problems =>
-            // ref.update(
-            //   _.updated(
-            //     id,
-            //     State(Comparison(id, attributes), Status.Completed(problems))
-            //   )
-            // ) *>
-            IO.pure(CreateComparisonOutput(id, problems))
+          .map: summary =>
+            CreateComparisonOutput(
+              id, 
+              Option.when(summary.mima.nonEmpty)(MimaProblems(summary.mima)),
+              Option.when(summary.tasty.nonEmpty)(TastyMimaProblems(summary.tasty))
+            )
   override def getComparison(id: ComparisonId) = ???
 end TestServiceImpl
 

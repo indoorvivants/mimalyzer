@@ -7,47 +7,64 @@ use alloy#uuidFormat
 
 @simpleRestJson
 service MimaService {
-  version: "1.0.0",
-  operations: [GetComparison, CreateComparison]
+    version: "1.0.0"
+    operations: [
+        GetComparison
+        CreateComparison
+    ]
 }
 
 @readonly
 @http(method: "GET", uri: "/api/comparison/{id}", code: 200)
 operation GetComparison {
-  input := {
-    @required
-    @httpLabel
-    id: ComparisonId
-  }
+    input := {
+        @required
+        @httpLabel
+        id: ComparisonId
+    }
 
-  output := {
-    @required
-    comparison: Comparison,
+    output := {
+        @required
+        comparison: Comparison
 
-    @required
-    problems: ProblemsList
-  }
+        @required
+        problems: ProblemsList
+    }
 }
 
 @idempotent
 @http(method: "PUT", uri: "/api/comparison", code: 200)
 operation CreateComparison {
-  input := {
-    @required
-    attributes: ComparisonAttributes
-  }
+    input := {
+        @required
+        attributes: ComparisonAttributes
+    }
 
-  output := {
-    @required
-    comparisonId: ComparisonId 
+    output := {
+        @required
+        comparisonId: ComparisonId
 
-    @required
-    problems: ProblemsList 
-  }
+        mimaProblems: MimaProblems
 
-  errors: [CodeTooBig, InvalidScalaVersion, CompilationFailed]
+        tastyMimaProblems: TastyMimaProblems
+    }
+
+    errors: [
+        CodeTooBig
+        InvalidScalaVersion
+        CompilationFailed
+    ]
 }
 
+structure MimaProblems {
+    @required
+    problems: ProblemsList
+}
+
+structure TastyMimaProblems {
+    @required
+    problems: ProblemsList
+}
 
 @error("client")
 @httpError(400)
@@ -56,63 +73,61 @@ structure InvalidScalaVersion {}
 @error("client")
 @httpError(400)
 structure CodeTooBig {
-  @required
-  sizeBytes: Integer
+    @required
+    sizeBytes: Integer
 
-  @required
-  maxSizeBytes: Integer
+    @required
+    maxSizeBytes: Integer
 
-  @required 
-  which: CodeLabel
+    @required
+    which: CodeLabel
 }
 
 @error("client")
 @httpError(400)
 structure CompilationFailed {
+    @required
+    which: CodeLabel
 
-  @required 
-  which: CodeLabel
-
-  @required
-  errorOut: String
+    @required
+    errorOut: String
 }
 
 enum CodeLabel {
-  AFTER
-  BEFORE
+    AFTER
+    BEFORE
 }
 
-
 list ProblemsList {
-  member: Problem
+    member: Problem
 }
 
 structure Problem {
-  message: String
+    message: String
 }
 
-
 structure Comparison {
-  @required
-  id: ComparisonId
+    @required
+    id: ComparisonId
 
-  @required
-  attributes: ComparisonAttributes
+    @required
+    attributes: ComparisonAttributes
 }
 
 structure ComparisonAttributes {
-  @required
-  beforeScalaCode: ScalaCode
+    @required
+    beforeScalaCode: ScalaCode
 
-  @required
-  afterScalaCode: ScalaCode
+    @required
+    afterScalaCode: ScalaCode
 
-  @required
-  scalaVersion: ScalaVersion
+    @required
+    scalaVersion: ScalaVersion
 }
 
 @uuidFormat
 string ComparisonId
+
 string ScalaCode
 
 enum ScalaVersion {

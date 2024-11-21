@@ -21,7 +21,7 @@ enum Action:
 
 enum Result:
   case NoProblems
-  case Problems(s: String)
+  case Problems(mima: Option[String] = None, tastyMima: Option[String])
   case Error(msg: String)
   case Waiting
 
@@ -81,13 +81,22 @@ end stateful
           good =>
             result.set(
               Option(
-                if good.problems.isEmpty then Result.NoProblems
+                if good.mimaProblems.isEmpty && good.tastyMimaProblems.isEmpty
+                then Result.NoProblems
                 else
                   Result.Problems(
-                    good.problems
-                      .flatMap(_.message)
-                      .map("- " + _)
-                      .mkString("\n")
+                    mima = good.mimaProblems.map(
+                      _.problems
+                        .flatMap(_.message)
+                        .map("- " + _)
+                        .mkString("\n")
+                    ),
+                    tastyMima = good.tastyMimaProblems.map(
+                      _.problems
+                        .flatMap(_.message)
+                        .map("- " + _)
+                        .mkString("\n")
+                    )
                   )
               )
             ),
@@ -219,21 +228,40 @@ end stateful
           case Some(Result.NoProblems) => true
           case _                       => false,
         cls("bg-rose-400") <-- result.signal.map:
-          case Some(Result.Problems(_)) => true
-          case _                        => false,
+          case Some(Result.Problems(mima, tastyMima)) =>
+            mima.isDefined || tastyMima.isDefined
+          case _ => false,
         cls("bg-amber-400") <-- result.signal.map:
           case Some(Result.Error(_)) => true
           case _                     => false,
         child <-- result.signal.map:
           case Some(Result.NoProblems) =>
             span("Congratulations! This change is binary compatible")
-          case Some(Result.Problems(s)) =>
-            p(
+          case Some(Result.Problems(mima, tastyMima)) =>
+            div(
+              cls := "flex flex-col gap-4",
               p(
-                "DANGER!\n This change is not binary compatible. Here's what MiMa reports:",
+                "DANGER!",
                 cls := "font-bold"
               ),
-              s
+              mima.map(problems =>
+                div(
+                  p(
+                    b("This change is not binary compatible according to MiMa:")
+                  ),
+                  p(problems)
+                )
+              ).getOrElse("✅ This change is binary compatible"),
+              tastyMima.map(problems =>
+                div(
+                  p(
+                    b(
+                      "This change is not TASTy compatible according to Tasty-MiMa:"
+                    )
+                  ),
+                  p(problems)
+                )
+              )
             )
           case Some(Result.Error(s)) =>
             p(
