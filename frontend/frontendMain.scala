@@ -152,7 +152,7 @@ end stateful
 
   def codeMirrorTextArea(target: Var[String]) =
     textArea(
-      cls := "w-full border-2 border-slate-400 p-2",
+      cls := "w-full border-2 border-slate-400 p-2 text-md",
       onInput.mapToValue --> target,
       value <-- target,
       onMountCallback(el =>
@@ -182,7 +182,7 @@ end stateful
       div(
         cls := "w-full flex flex-row gap-4",
         div(
-          cls := "w-full flex flex-col gap-2",
+          cls := "flex flex-col gap-2 grow-0 w-6/12",
           h2("Old Scala code", cls := "font-bold"),
           p(
             "This simulates the previous version of your library",
@@ -191,7 +191,7 @@ end stateful
           codeMirrorTextArea(oldScalaCode)
         ),
         div(
-          cls := "w-full flex flex-col gap-2",
+          cls := "flex flex-col gap-2 grow-0 w-6/12",
           h2("New Scala code", cls := "font-bold"),
           p(
             "This simulates the next version of your library",
