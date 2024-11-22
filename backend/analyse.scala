@@ -15,6 +15,7 @@ import java.nio.file.Path
 import java.nio.file.FileSystems
 import java.net.URI
 import tastyquery.jdk.ClasspathLoaders
+import concurrent.duration.*
 
 val files = Files[IO]
 val proc = Processes[IO]
@@ -44,6 +45,12 @@ def analyseFileCode(
       )
     )
       .evalOn(singleThreadExecutor)
+      .timeoutTo(
+        5.seconds,
+        IO.raiseError(
+          CompilationFailed(CodeLabel.BEFORE, "Took longer than 5 seconds")
+        )
+      )
 
     compiledNew <- IO(
       compiler.compile(
@@ -53,6 +60,12 @@ def analyseFileCode(
       )
     )
       .evalOn(singleThreadExecutor)
+      .timeoutTo(
+        5.seconds,
+        IO.raiseError(
+          CompilationFailed(CodeLabel.BEFORE, "Took longer than 5 seconds")
+        )
+      )
 
     _ <- IO.raiseWhen(compiledOld.errors().nonEmpty)(
       CompilationFailed(

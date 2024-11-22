@@ -75,8 +75,9 @@ end stateful
 
       result.set(Some(Result.Waiting))
 
-      apiClient
-        .createComparison(attributes)
+      given Stability = Stability()
+
+      exponentialFetch(() => apiClient.createComparison(attributes))
         .`then`(
           good =>
             result.set(
@@ -244,14 +245,18 @@ end stateful
                 "DANGER!",
                 cls := "font-bold"
               ),
-              mima.map(problems =>
-                div(
-                  p(
-                    b("This change is not binary compatible according to MiMa:")
-                  ),
-                  p(problems)
+              mima
+                .map(problems =>
+                  div(
+                    p(
+                      b(
+                        "This change is not binary compatible according to MiMa:"
+                      )
+                    ),
+                    p(problems)
+                  )
                 )
-              ).getOrElse("✅ This change is binary compatible"),
+                .getOrElse("✅ This change is binary compatible"),
               tastyMima.map(problems =>
                 div(
                   p(
