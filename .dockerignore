@@ -7,3 +7,5 @@
 Dockerfile
 fly.toml
 **/node_modules
+.git
+.dev
