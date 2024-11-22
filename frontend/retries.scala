@@ -10,10 +10,9 @@ import scala.scalajs.js.Thenable.Implicits.*
 
 case class Stability(
     initialDelay: FiniteDuration = 100.millis,
-    timeout: FiniteDuration = 2.seconds,
+    timeout: FiniteDuration = 5.seconds,
     delay: FiniteDuration = 100.millis,
-    maxRetries: Int = 5,
-    retryCodes: Set[Int] = Set(503, 500)
+    maxRetries: Int = 5
 )
 
 def exponentialFetch[A](
@@ -21,7 +20,7 @@ def exponentialFetch[A](
     shouldRetry: A => Boolean = {
       (_: Any) match
         case err: smithy4s.http.UnknownErrorResponse =>
-          err.code == 502 || err.code == 504
+          err.code == 502 || err.code == 504 || err.code == 503
         case other =>
           dom.console.log(s"Not retrying $other")
           false
