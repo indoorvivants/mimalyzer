@@ -179,7 +179,13 @@ end stateful
       div(
         h1("Mimalyzer", cls := "text-6xl"),
         p(
-          "Check whether your code change is binary compatible in Scala according to ",
+          "Check whether your code change is ",
+          a(
+            href := "https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html",
+            "binary compatible",
+            basicLink
+          ),
+          " in Scala according to ",
           a(
             href := "https://github.com/lightbend-labs/mima",
             "MiMa",
@@ -295,6 +301,37 @@ end stateful
           case None                 => "",
         display <-- result.signal.map(s =>
           if s.nonEmpty then display.block.value else display.none.value
+        )
+      ),
+      div(
+        cls := "text-sm",
+        "Made by ",
+        a(
+          href := "https://blog.indoorvivants.com",
+          "Anton Sviridov",
+          basicLink
+        ),
+        " using ",
+        a(href := "https://scala-js.org", "Scala.js", basicLink),
+        " and ",
+        a(
+          href := "https://disneystreaming.github.io/smithy4s/",
+          "Smithy4s",
+          basicLink
+        ),
+        " from ",
+        a(
+          href := "https://github.com/indoorvivants/scala-cli-smithy4s-fullstack-template",
+          "Fullstack Scala Template",
+          basicLink
+        ),
+        p(
+          "Contribute on ",
+          a(
+            href := "https://github.com/keynmol/mimalyzer",
+            "Github",
+            basicLink
+          )
         )
       ),
       handleEvents,
