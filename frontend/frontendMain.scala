@@ -170,13 +170,27 @@ end stateful
       )
     )
 
+  val basicLink =
+    cls := "text-indigo-600 hover:no-underline underline"
+
   val app =
     div(
       cls := "content mx-auto w-8/12 bg-white/70 p-6 rounded-xl max-w-screen-lg flex flex-col gap-4",
       div(
         h1("Mimalyzer", cls := "text-6xl"),
         p(
-          "Check whether your code change is binary compatible in Scala, according to MiMa",
+          "Check whether your code change is binary compatible in Scala according to ",
+          a(
+            href := "https://github.com/lightbend-labs/mima",
+            "MiMa",
+            basicLink
+          ),
+          " and TASTy compatible in Scala 3 according to ",
+          a(
+            href := "https://github.com/scalacenter/tasty-mima",
+            "TASTy-MiMa",
+            basicLink
+          ),
           cls := "font-italic text-sm"
         )
       ),
@@ -184,7 +198,7 @@ end stateful
         cls := "w-full flex flex-row gap-4",
         div(
           cls := "flex flex-col gap-2 grow-0 w-6/12",
-          h2("Old Scala code", cls := "font-bold"),
+          h2("Scala code before", cls := "font-bold"),
           p(
             "This simulates the previous version of your library",
             cls := "text-md"
@@ -193,7 +207,7 @@ end stateful
         ),
         div(
           cls := "flex flex-col gap-2 grow-0 w-6/12",
-          h2("New Scala code", cls := "font-bold"),
+          h2("Scala code after", cls := "font-bold"),
           p(
             "This simulates the next version of your library",
             cls := "text-md"
