@@ -43,7 +43,6 @@ COPY compiler-interface/ .
 
 WORKDIR /source/scala-213-bridge
 COPY scala-213-bridge/ .
-RUN 
 RUN scala-cli package . --library -f -o ./scala213bridge.jar
 
 # Build scala212 compiler bridge
@@ -55,8 +54,7 @@ COPY compiler-interface/ .
 
 WORKDIR /source/scala-212-bridge
 COPY scala-212-bridge/ .
-RUN 
-RUN scala-cli package . --library -f -o ./scala213bridge.jar
+RUN scala-cli package . --library -f -o ./scala212bridge.jar
 
 
 # Build scala3 compiler bridge
