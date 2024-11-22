@@ -99,9 +99,6 @@ def analyseFileCode(
     oldClasspath = javaLib ::: entryBefore +: classpathBefore
     newClasspath = javaLib ::: entryAfter +: classpathAfter
 
-    _ <- scribe.cats.io.info(oldClasspath.mkString(":"))
-    _ <- scribe.cats.io.info(newClasspath.mkString(":"))
-
     tastyProblems <- IO.blocking(
       Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
         tastymima.analyze(

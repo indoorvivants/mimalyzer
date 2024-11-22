@@ -85,13 +85,13 @@ class Scala3Compiler() extends CompilerInterface {
     )
 
   // lazy val driver:  = CompilerDriver(defaultFlags)
-  var driver: CompilerDriver = null
+  var driver: () => CompilerDriver = null
 
   val savedClasspath = List.newBuilder[String]
 
   override def withClasspath(cp: Array[String]): CompilerInterface = {
     savedClasspath.addAll(cp)
-    driver = CompilerDriver(
+    driver = () => CompilerDriver(
       defaultFlags ++ List("-classpath", cp.mkString(File.pathSeparator))
     )
 
@@ -110,7 +110,7 @@ class Scala3Compiler() extends CompilerInterface {
     }
 
     val compiler = new Compiler
-    val ctx = driver.currentCtx.fresh
+    val ctx = driver().currentCtx.fresh
 
     val reporter = new AccumulatingReporter
 
