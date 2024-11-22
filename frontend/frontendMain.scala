@@ -40,10 +40,10 @@ end stateful
 
 @main def hello =
   val (oldScalaCode, oldSave) =
-    stateful("old-scala-code", "class X {def x: Int = ???}")
+    stateful("old-scala-code", "package hello\nclass X {def x: Int = ???}")
 
   val (newScalaCode, newSave) =
-    stateful("new-scala-code", "class X {def y: Int = ???}")
+    stateful("new-scala-code", "package hello\nclass X {def y: Int = ???}")
 
   val (scalaVersion, versionSave) =
     stateful("scala-version-enum", ScalaVersion.SCALA_213.value)
