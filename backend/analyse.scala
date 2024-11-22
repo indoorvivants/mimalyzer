@@ -83,18 +83,21 @@ def analyseFileCode(
     )
 
     tastymima = new TastyMiMa(new Config)
+    oldClasspath = javaLib ::: entryBefore +: classpathBefore
+    newClasspath = javaLib ::: entryAfter +: classpathAfter
+
+    _ <- scribe.cats.io.info(oldClasspath.mkString(":"))
+    _ <- scribe.cats.io.info(newClasspath.mkString(":"))
+
     tastyProblems <- IO.blocking(
       Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
         tastymima.analyze(
-          oldClasspath = javaLib ::: entryBefore +: classpathBefore,
+          oldClasspath = oldClasspath,
           oldClasspathEntry = entryBefore,
-          newClasspath = javaLib ::: entryAfter +: classpathAfter,
+          newClasspath = newClasspath,
           newClasspathEntry = entryAfter
         )
     )
-
-    _ = println(classDirOld)
-    _ = println(classDirNew)
 
     _ <- files.deleteRecursively(classDirOld)
     _ <- files.deleteRecursively(classDirNew)
