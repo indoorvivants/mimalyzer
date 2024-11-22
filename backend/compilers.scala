@@ -40,68 +40,63 @@ case class Compilers(
     scala3: Scala3Compiler
 )
 
+def loadCompiler[T <: CompilerInterface](
+    compilerClasspathFileEnv: String,
+    bridgeEnv: String,
+    libraryEnv: String,
+    sc: Boolean
+)(env: Map[String, String]) =
+  val lib = scala.io.Source
+    .fromFile(env(libraryEnv))
+    .getLines()
+    .mkString("\n")
+
+  val bridge = env(bridgeEnv)
+  val compiler = scala.io.Source
+    .fromFile(env(compilerClasspathFileEnv))
+    .getLines()
+    .mkString("\n")
+
+  val urls = (bridge :: compiler.split(java.io.File.pathSeparator).toList)
+    .map(new File(_))
+    .map(_.toURL)
+
+  val compilerLoader = CompilerClassLoader.create(urls.toArray, sc = sc)
+  val api = ServiceLoader
+    .load(classOf[mimalyzer.iface.CompilerInterface], compilerLoader)
+    .iterator()
+    .next()
+
+  api.withClasspath(lib.split(":"))
+end loadCompiler
+
 object Scala3Compiler:
   def load(env: Map[String, String]): Scala3Compiler =
-    val scala3lib = scala.io.Source
-      .fromFile(env("SCALA_3_CLASSPATH_FILE"))
-      .getLines()
-      .mkString("\n")
-    val bridge = env("SCALA_3_BRIDGE")
-
-    val urls = (bridge :: scala3lib.split(":").toList)
-      .map(new File(_))
-      .map(_.toURL)
-
-    val compilerLoader = CompilerClassLoader.create(urls.toArray, sc = true)
-    val api = ServiceLoader
-      .load(classOf[mimalyzer.iface.CompilerInterface], compilerLoader)
-      .iterator()
-      .next()
-
-    api.withClasspath(scala3lib.split(":"))
-  end load
+    loadCompiler(
+      "SCALA_3_COMPILER_CLASSPATH_FILE",
+      "SCALA_3_BRIDGE",
+      "SCALA_3_CLASSPATH_FILE",
+      false
+    )(env)
 end Scala3Compiler
 
 object Scala212Compiler:
   def load(env: Map[String, String]): Scala212Compiler =
-    val scala212Lib = scala.io.Source
-      .fromFile(env("SCALA_212_CLASSPATH_FILE"))
-      .getLines()
-      .mkString("\n")
-    val bridge = env("SCALA_212_BRIDGE")
-
-    val urls = (bridge :: scala212Lib.split(":").toList)
-      .map(new File(_))
-      .map(_.toURL)
-
-    val compilerLoader = CompilerClassLoader.create(urls.toArray)
-    val api = ServiceLoader
-      .load(classOf[mimalyzer.iface.CompilerInterface], compilerLoader)
-      .iterator()
-      .next()
-
-    api.withClasspath(scala212Lib.split(":"))
-  end load
+    loadCompiler(
+      "SCALA_212_COMPILER_CLASSPATH_FILE",
+      "SCALA_212_BRIDGE",
+      "SCALA_212_CLASSPATH_FILE",
+      false
+    )(env)
 end Scala212Compiler
 
 object Scala213Compiler:
   def load(env: Map[String, String]): Scala213Compiler =
-    val scala213Lib = scala.io.Source
-      .fromFile(env("SCALA_213_CLASSPATH_FILE"))
-      .getLines()
-      .mkString("\n")
-    val bridge = env("SCALA_213_BRIDGE")
-
-    val urls = (bridge :: scala213Lib.split(":").toList)
-      .map(new File(_))
-      .map(_.toURL)
-
-    val compilerLoader = CompilerClassLoader.create(urls.toArray)
-    val api = ServiceLoader
-      .load(classOf[mimalyzer.iface.CompilerInterface], compilerLoader)
-      .iterator()
-      .next()
-
-    api.withClasspath(scala213Lib.split(":"))
+    loadCompiler(
+      "SCALA_213_COMPILER_CLASSPATH_FILE",
+      "SCALA_213_BRIDGE",
+      "SCALA_213_CLASSPATH_FILE",
+      false
+    )(env)
   end load
 end Scala213Compiler
