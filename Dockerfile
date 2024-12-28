@@ -9,7 +9,7 @@ RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh
     chmod +x scala-cli && \
     scala-cli config power true && \
     scala-cli version && \
-    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.5.2
+    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.6.2
 
 # Build frontend
 
