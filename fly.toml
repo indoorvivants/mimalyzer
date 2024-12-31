@@ -22,4 +22,4 @@ primary_region = 'lhr'
   cpus = 1
 
 [env]
-JAVA_OPTS = '-Xms250m -Xmx250m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=1m -XX:+UseStringDeduplication -XX:+DisableExplicitGC -XX:+UseCompressedOops'
+JAVA_OPTS = '-Xms128m -Xmx128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=1m -XX:+UseStringDeduplication -XX:+DisableExplicitGC -XX:+UseCompressedOops'
