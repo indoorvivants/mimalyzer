@@ -20,3 +20,6 @@ primary_region = 'lhr'
   memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
+
+[env]
+JAVA_OPTS = '-Xms250m -Xmx250m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=1m -XX:+UseStringDeduplication -XX:+DisableExplicitGC -XX:+UseCompressedOops'
