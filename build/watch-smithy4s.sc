@@ -1,7 +1,7 @@
-//> using scala 3.5.2
-//> using dep "com.disneystreaming.smithy4s:smithy4s-codegen-cli_2.13:0.18.25"
-//> using dep com.lihaoyi::os-lib::0.11.3
-//> using dep com.lihaoyi::os-lib-watch::0.11.3
+//> using scala 3.7.3
+//> using dep "com.disneystreaming.smithy4s:smithy4s-codegen-cli_2.13:0.18.42"
+//> using dep com.lihaoyi::os-lib::0.11.5
+//> using dep com.lihaoyi::os-lib-watch::0.11.5
 
 import scala.util.*
 import util.chaining.*

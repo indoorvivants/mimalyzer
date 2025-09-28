@@ -1,3 +1,7 @@
+SCALA_213_VERSION = 2.13.16
+SCALA_212_VERSION = 2.12.20
+SCALA_3_LTS_VERSION = 3.3.6
+
 docker:
 	docker build . -t mimalyzer:latest
 
@@ -35,23 +39,22 @@ smithy4s:
 	cd scala-213-bridge && scala-cli package . --library -f -o ../.dev/scala213bridge.jar
 
 .dev/scala213.classpath: .dev
-	cs fetch -p org.scala-lang:scala-library:2.13.15 > .dev/scala213.classpath
+	cs fetch -p org.scala-lang:scala-library:$(SCALA_213_VERSION) > .dev/scala213.classpath
 
 .dev/scala213.compiler.classpath: .dev
-	cs fetch -p org.scala-lang:scala-compiler:2.13.15 > .dev/scala213.compiler.classpath
+	cs fetch -p org.scala-lang:scala-compiler:$(SCALA_213_VERSION) > .dev/scala213.compiler.classpath
 
 .dev/scala212.classpath: .dev
-	cs fetch -p org.scala-lang:scala-library:2.12.20 > .dev/scala212.classpath
+	cs fetch -p org.scala-lang:scala-library:$(SCALA_212_VERSION) > .dev/scala212.classpath
 
 .dev/scala212.compiler.classpath: .dev
-	cs fetch -p org.scala-lang:scala-compiler:2.12.20 > .dev/scala212.compiler.classpath
-
+	cs fetch -p org.scala-lang:scala-compiler:$(SCALA_212_VERSION) > .dev/scala212.compiler.classpath
 
 .dev/scala3.compiler.classpath: .dev
-	cs fetch -p org.scala-lang:scala3-compiler_3:3.3.4 > .dev/scala3.compiler.classpath
+	cs fetch -p org.scala-lang:scala3-compiler_3:$(SCALA_3_LTS_VERSION) > .dev/scala3.compiler.classpath
 
 .dev/scala3.classpath: .dev
-	cs fetch -p org.scala-lang:scala3-library_3:3.3.4 > .dev/scala3.classpath
+	cs fetch -p org.scala-lang:scala3-library_3:$(SCALA_3_LTS_VERSION) > .dev/scala3.classpath
 
 library_classpaths = ./.dev/scala3.classpath ./.dev/scala213.classpath ./.dev/scala212.classpath
 compiler_classpaths = ./.dev/scala3.compiler.classpath ./.dev/scala213.compiler.classpath ./.dev/scala212.compiler.classpath
@@ -60,7 +63,7 @@ bridges = ./.dev/scala3bridge.jar ./.dev/scala213bridge.jar ./.dev/scala212bridg
 prepare-classpaths: $(library_classpaths) $(compiler_classpaths)
 
 setup-ide:
-	rm -rf .scala-build .bsp .metals 
+	rm -rf .scala-build .bsp .metals
 	cd build && scala-cli --power setup-ide .
 	cd shared && scala-cli --power setup-ide .
 	cd frontend && scala-cli --power setup-ide .
@@ -89,9 +92,7 @@ run-backend: $(bridges) $(library_classpaths) $(compiler_classpaths)
 		export SCALA_212_COMPILER_CLASSPATH_FILE="../.dev/scala212.compiler.classpath" && \
 		export SCALA_212_CLASSPATH_FILE="../.dev/scala212.classpath" && \
 		export SCALA_212_BRIDGE="../.dev/scala212bridge.jar" && \
-		scala-cli --power run -w . --restart -- 9999
+		scala-cli --power run -w . --restart -- 9977
 
 run-frontend:
 	cd frontend && npm install && npm run dev
-
-

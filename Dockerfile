@@ -3,13 +3,14 @@
 FROM node:22 as scala-cli-build
 
 WORKDIR /usr/local/bin
-
+COPY ./frontend/project.scala /tmp/frontend-v.scala
+# Extract Scala version from a file that contains a line "//> using scala 3.7.3"
 RUN wget https://raw.githubusercontent.com/VirtusLab/scala-cli/main/scala-cli.sh && \
     mv scala-cli.sh scala-cli && \
     chmod +x scala-cli && \
     scala-cli config power true && \
     scala-cli version && \
-    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.6.2
+    echo '@main def hello = println(42)' | scala-cli run _ --js -S 3.7.3
 
 # Build frontend
 
@@ -66,7 +67,7 @@ COPY compiler-interface/ .
 
 WORKDIR /source/scala-3-bridge
 COPY scala-3-bridge/ .
-RUN 
+RUN
 RUN scala-cli package . --library -f -o ./scala3bridge.jar
 
 
@@ -77,7 +78,7 @@ FROM nginx
 RUN apt update && apt install -y gpg wget && \
     wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null && \
     echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
-    apt update && apt install -y temurin-23-jdk make
+    apt update && apt install -y temurin-24-jdk make
 
 RUN curl -fLo coursier https://github.com/coursier/launchers/raw/master/coursier && \
     chmod +x coursier && \
@@ -90,14 +91,14 @@ COPY Makefile .
 
 RUN make prepare-classpaths
 
-ENV SCALA_213_CLASSPATH_FILE /app/.dev/scala213.classpath 
-ENV SCALA_213_COMPILER_CLASSPATH_FILE /app/.dev/scala213.compiler.classpath 
+ENV SCALA_213_CLASSPATH_FILE /app/.dev/scala213.classpath
+ENV SCALA_213_COMPILER_CLASSPATH_FILE /app/.dev/scala213.compiler.classpath
 
-ENV SCALA_212_CLASSPATH_FILE /app/.dev/scala212.classpath 
-ENV SCALA_212_COMPILER_CLASSPATH_FILE /app/.dev/scala212.compiler.classpath 
+ENV SCALA_212_CLASSPATH_FILE /app/.dev/scala212.classpath
+ENV SCALA_212_COMPILER_CLASSPATH_FILE /app/.dev/scala212.compiler.classpath
 
-ENV SCALA_3_CLASSPATH_FILE /app/.dev/scala3.classpath 
-ENV SCALA_3_COMPILER_CLASSPATH_FILE /app/.dev/scala3.compiler.classpath 
+ENV SCALA_3_CLASSPATH_FILE /app/.dev/scala3.classpath
+ENV SCALA_3_COMPILER_CLASSPATH_FILE /app/.dev/scala3.compiler.classpath
 
 ENV SCALA_213_BRIDGE /app/.dev/scala213bridge.jar
 ENV SCALA_212_BRIDGE /app/.dev/scala212bridge.jar
@@ -115,4 +116,3 @@ COPY --from=scala-3-bridge-build /source/scala-3-bridge/scala3bridge.jar /app/.d
 EXPOSE 80
 
 CMD ["/app/entrypoint.sh"]
-

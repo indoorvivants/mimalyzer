@@ -1,9 +1,10 @@
-//> using scala 2.13
-//> using dep org.scala-lang:scala-compiler:2.13.15
+//> using scala 2.13.16
+//> using dep org.scala-lang:scala-compiler:2.13.16
 //> using file ../compiler-interface/CompilationResult.java
 //> using file ../compiler-interface/CompilerInterface.java
 //> using file ../compiler-interface/CompilationError.java
 //> using resourceDir ./resources
+//> using option -Xsource:3
 
 package mimalyzer.scala213
 
@@ -15,11 +16,11 @@ import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.SourceFile
 import scala.reflect.internal.util.BatchSourceFile
-import mimalyzer.iface._
+import mimalyzer.iface.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import java.util.stream.Collector
 import java.util.stream.Collectors
 

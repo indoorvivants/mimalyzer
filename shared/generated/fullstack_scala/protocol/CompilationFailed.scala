@@ -8,8 +8,7 @@ import smithy4s.Smithy4sThrowable
 import smithy4s.schema.Schema.string
 import smithy4s.schema.Schema.struct
 
-final case class CompilationFailed(which: CodeLabel, errorOut: String) extends Smithy4sThrowable {
-}
+final case class CompilationFailed(which: CodeLabel, errorOut: String) extends Smithy4sThrowable
 
 object CompilationFailed extends ShapeTag.Companion[CompilationFailed] {
   val id: ShapeId = ShapeId("fullstack_scala.protocol", "CompilationFailed")

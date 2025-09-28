@@ -1,7 +1,8 @@
-//> using scala 2.12
+//> using scala 2.12.20
 //> using dep org.scala-lang:scala-compiler:2.12.20
 //> using file ../compiler-interface/
 //> using resourceDir ./resources
+//> using option -Xsource:3
 
 package mimalyzer.scala212
 
@@ -13,11 +14,11 @@ import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.SourceFile
 import scala.reflect.internal.util.BatchSourceFile
-import mimalyzer.iface._
+import mimalyzer.iface.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 import java.util.stream.Collector
 import java.util.stream.Collectors
 

@@ -8,8 +8,7 @@ import smithy4s.Smithy4sThrowable
 import smithy4s.schema.Schema.int
 import smithy4s.schema.Schema.struct
 
-final case class CodeTooBig(sizeBytes: Int, maxSizeBytes: Int, which: CodeLabel) extends Smithy4sThrowable {
-}
+final case class CodeTooBig(sizeBytes: Int, maxSizeBytes: Int, which: CodeLabel) extends Smithy4sThrowable
 
 object CodeTooBig extends ShapeTag.Companion[CodeTooBig] {
   val id: ShapeId = ShapeId("fullstack_scala.protocol", "CodeTooBig")

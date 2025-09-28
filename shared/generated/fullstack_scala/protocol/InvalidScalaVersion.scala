@@ -7,8 +7,7 @@ import smithy4s.ShapeTag
 import smithy4s.Smithy4sThrowable
 import smithy4s.schema.Schema.constant
 
-final case class InvalidScalaVersion() extends Smithy4sThrowable {
-}
+final case class InvalidScalaVersion() extends Smithy4sThrowable
 
 object InvalidScalaVersion extends ShapeTag.Companion[InvalidScalaVersion] {
   val id: ShapeId = ShapeId("fullstack_scala.protocol", "InvalidScalaVersion")

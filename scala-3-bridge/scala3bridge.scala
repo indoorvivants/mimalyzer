@@ -1,5 +1,5 @@
-//> using scala 3.3.4
-//> using dep org.scala-lang:scala3-compiler_3:3.3.4
+//> using scala 3.3.6
+//> using dep org.scala-lang:scala3-compiler_3:3.3.6
 //> using file ../compiler-interface/CompilationResult.java
 //> using file ../compiler-interface/CompilerInterface.java
 //> using file ../compiler-interface/CompilationError.java
