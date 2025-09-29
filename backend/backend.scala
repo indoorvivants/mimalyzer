@@ -32,6 +32,8 @@ class TestServiceImpl(
 ) extends MimaService[IO]:
   val randomID = UUIDGen[IO].randomUUID.map(ComparisonId(_))
 
+  override def health() = IO.pure(HealthOutput(status = "ok"))
+
   private def checkCode(code: ScalaCode, label: CodeLabel) =
     val MAX_SIZE = 2048
     val len = code.value.getBytes().length

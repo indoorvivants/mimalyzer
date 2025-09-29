@@ -12,6 +12,7 @@ import smithy4s.schema.ErrorSchema
 import smithy4s.schema.OperationSchema
 import smithy4s.schema.Schema.bijection
 import smithy4s.schema.Schema.union
+import smithy4s.schema.Schema.unit
 
 trait MimaServiceGen[F[_, _, _, _, _]] {
   self =>
@@ -20,6 +21,8 @@ trait MimaServiceGen[F[_, _, _, _, _]] {
   def createComparison(attributes: ComparisonAttributes): F[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing]
   /** HTTP GET /api/comparison/{id} */
   def getComparison(id: ComparisonId): F[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing]
+  /** HTTP GET /api/health */
+  def health(): F[Unit, Nothing, HealthOutput, Nothing, Nothing]
 
   final def transform: Transformation.PartiallyApplied[MimaServiceGen[F]] = Transformation.of[MimaServiceGen[F]](this)
 }
@@ -43,6 +46,7 @@ object MimaServiceGen extends Service.Mixin[MimaServiceGen, MimaServiceOperation
   val endpoints: Vector[smithy4s.Endpoint[MimaServiceOperation, _, _, _, _, _]] = Vector(
     MimaServiceOperation.CreateComparison,
     MimaServiceOperation.GetComparison,
+    MimaServiceOperation.Health,
   )
 
   def input[I, E, O, SI, SO](op: MimaServiceOperation[I, E, O, SI, SO]): I = op.input
@@ -71,10 +75,12 @@ object MimaServiceOperation {
   object reified extends MimaServiceGen[MimaServiceOperation] {
     def createComparison(attributes: ComparisonAttributes): CreateComparison = CreateComparison(CreateComparisonInput(attributes))
     def getComparison(id: ComparisonId): GetComparison = GetComparison(GetComparisonInput(id))
+    def health(): Health = Health()
   }
   class Transformed[P[_, _, _, _, _], P1[_ ,_ ,_ ,_ ,_]](alg: MimaServiceGen[P], f: PolyFunction5[P, P1]) extends MimaServiceGen[P1] {
     def createComparison(attributes: ComparisonAttributes): P1[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = f[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing](alg.createComparison(attributes))
     def getComparison(id: ComparisonId): P1[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = f[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing](alg.getComparison(id))
+    def health(): P1[Unit, Nothing, HealthOutput, Nothing, Nothing] = f[Unit, Nothing, HealthOutput, Nothing, Nothing](alg.health())
   }
 
   def toPolyFunction[P[_, _, _, _, _]](impl: MimaServiceGen[P]): PolyFunction5[MimaServiceOperation, P] = new PolyFunction5[MimaServiceOperation, P] {
@@ -184,6 +190,19 @@ object MimaServiceOperation {
       .withOutput(GetComparisonOutput.schema)
       .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("GET"), uri = smithy.api.NonEmptyString("/api/comparison/{id}"), code = 200), smithy.api.Readonly())
     def wrap(input: GetComparisonInput): GetComparison = GetComparison(input)
+  }
+  final case class Health() extends MimaServiceOperation[Unit, Nothing, HealthOutput, Nothing, Nothing] {
+    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[Unit, Nothing, HealthOutput, Nothing, Nothing] = impl.health()
+    def ordinal: Int = 2
+    def input: Unit = ()
+    def endpoint: smithy4s.Endpoint[MimaServiceOperation,Unit, Nothing, HealthOutput, Nothing, Nothing] = Health
+  }
+  object Health extends smithy4s.Endpoint[MimaServiceOperation,Unit, Nothing, HealthOutput, Nothing, Nothing] {
+    val schema: OperationSchema[Unit, Nothing, HealthOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "Health"))
+      .withInput(unit)
+      .withOutput(HealthOutput.schema)
+      .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("GET"), uri = smithy.api.NonEmptyString("/api/health"), code = 200), smithy.api.Readonly())
+    def wrap(input: Unit): Health = Health()
   }
 }
 

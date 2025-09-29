@@ -9,10 +9,22 @@ use alloy#uuidFormat
 service MimaService {
     version: "1.0.0"
     operations: [
+        Health
         GetComparison
         CreateComparison
     ]
 }
+
+
+@readonly
+@http(method: "GET", uri: "/api/health", code: 200)
+operation Health {
+  output := {
+    @required
+    status: String
+  } 
+}
+
 
 @readonly
 @http(method: "GET", uri: "/api/comparison/{id}", code: 200)
