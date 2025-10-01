@@ -19,8 +19,10 @@ trait MimaServiceGen[F[_, _, _, _, _]] {
 
   /** HTTP PUT /api/comparison */
   def createComparison(attributes: ComparisonAttributes): F[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing]
+  /** HTTP GET /api/status/{id} */
+  def getStatus(id: ComparisonId): F[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing]
   /** HTTP GET /api/comparison/{id} */
-  def getComparison(id: ComparisonId): F[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing]
+  def getComparison(id: ComparisonId): F[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing]
   /** HTTP GET /api/health */
   def health(): F[Unit, Nothing, HealthOutput, Nothing, Nothing]
 
@@ -45,6 +47,7 @@ object MimaServiceGen extends Service.Mixin[MimaServiceGen, MimaServiceOperation
 
   val endpoints: Vector[smithy4s.Endpoint[MimaServiceOperation, _, _, _, _, _]] = Vector(
     MimaServiceOperation.CreateComparison,
+    MimaServiceOperation.GetStatus,
     MimaServiceOperation.GetComparison,
     MimaServiceOperation.Health,
   )
@@ -61,6 +64,8 @@ object MimaServiceGen extends Service.Mixin[MimaServiceGen, MimaServiceOperation
 
   type CreateComparisonError = MimaServiceOperation.CreateComparisonError
   val CreateComparisonError = MimaServiceOperation.CreateComparisonError
+  type GetComparisonError = MimaServiceOperation.GetComparisonError
+  val GetComparisonError = MimaServiceOperation.GetComparisonError
 }
 
 sealed trait MimaServiceOperation[Input, Err, Output, StreamedInput, StreamedOutput] {
@@ -74,12 +79,14 @@ object MimaServiceOperation {
 
   object reified extends MimaServiceGen[MimaServiceOperation] {
     def createComparison(attributes: ComparisonAttributes): CreateComparison = CreateComparison(CreateComparisonInput(attributes))
+    def getStatus(id: ComparisonId): GetStatus = GetStatus(GetStatusInput(id))
     def getComparison(id: ComparisonId): GetComparison = GetComparison(GetComparisonInput(id))
     def health(): Health = Health()
   }
   class Transformed[P[_, _, _, _, _], P1[_ ,_ ,_ ,_ ,_]](alg: MimaServiceGen[P], f: PolyFunction5[P, P1]) extends MimaServiceGen[P1] {
     def createComparison(attributes: ComparisonAttributes): P1[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing] = f[CreateComparisonInput, MimaServiceOperation.CreateComparisonError, CreateComparisonOutput, Nothing, Nothing](alg.createComparison(attributes))
-    def getComparison(id: ComparisonId): P1[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = f[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing](alg.getComparison(id))
+    def getStatus(id: ComparisonId): P1[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] = f[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing](alg.getStatus(id))
+    def getComparison(id: ComparisonId): P1[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] = f[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing](alg.getComparison(id))
     def health(): P1[Unit, Nothing, HealthOutput, Nothing, Nothing] = f[Unit, Nothing, HealthOutput, Nothing, Nothing](alg.health())
   }
 
@@ -106,20 +113,17 @@ object MimaServiceOperation {
     object project {
       def codeTooBig: Option[CodeTooBig] = CreateComparisonError.CodeTooBigCase.alt.project.lift(self).map(_.codeTooBig)
       def invalidScalaVersion: Option[InvalidScalaVersion] = CreateComparisonError.InvalidScalaVersionCase.alt.project.lift(self).map(_.invalidScalaVersion)
-      def compilationFailed: Option[CompilationFailed] = CreateComparisonError.CompilationFailedCase.alt.project.lift(self).map(_.compilationFailed)
     }
 
     def accept[A](visitor: CreateComparisonError.Visitor[A]): A = this match {
       case value: CreateComparisonError.CodeTooBigCase => visitor.codeTooBig(value.codeTooBig)
       case value: CreateComparisonError.InvalidScalaVersionCase => visitor.invalidScalaVersion(value.invalidScalaVersion)
-      case value: CreateComparisonError.CompilationFailedCase => visitor.compilationFailed(value.compilationFailed)
     }
   }
   object CreateComparisonError extends ErrorSchema.Companion[CreateComparisonError] {
 
     def codeTooBig(codeTooBig: CodeTooBig): CreateComparisonError = CodeTooBigCase(codeTooBig)
     def invalidScalaVersion(invalidScalaVersion: InvalidScalaVersion): CreateComparisonError = InvalidScalaVersionCase(invalidScalaVersion)
-    def compilationFailed(compilationFailed: CompilationFailed): CreateComparisonError = CompilationFailedCase(compilationFailed)
 
     val id: ShapeId = ShapeId("fullstack_scala.protocol", "CreateComparisonError")
 
@@ -127,7 +131,6 @@ object MimaServiceOperation {
 
     final case class CodeTooBigCase(codeTooBig: CodeTooBig) extends CreateComparisonError { final def $ordinal: Int = 0 }
     final case class InvalidScalaVersionCase(invalidScalaVersion: InvalidScalaVersion) extends CreateComparisonError { final def $ordinal: Int = 1 }
-    final case class CompilationFailedCase(compilationFailed: CompilationFailed) extends CreateComparisonError { final def $ordinal: Int = 2 }
 
     object CodeTooBigCase {
       val hints: Hints = Hints.empty
@@ -139,16 +142,10 @@ object MimaServiceOperation {
       val schema: Schema[CreateComparisonError.InvalidScalaVersionCase] = bijection(InvalidScalaVersion.schema.addHints(hints), CreateComparisonError.InvalidScalaVersionCase(_), _.invalidScalaVersion)
       val alt = schema.oneOf[CreateComparisonError]("InvalidScalaVersion")
     }
-    object CompilationFailedCase {
-      val hints: Hints = Hints.empty
-      val schema: Schema[CreateComparisonError.CompilationFailedCase] = bijection(CompilationFailed.schema.addHints(hints), CreateComparisonError.CompilationFailedCase(_), _.compilationFailed)
-      val alt = schema.oneOf[CreateComparisonError]("CompilationFailed")
-    }
 
     trait Visitor[A] {
       def codeTooBig(value: CodeTooBig): A
       def invalidScalaVersion(value: InvalidScalaVersion): A
-      def compilationFailed(value: CompilationFailed): A
     }
 
     object Visitor {
@@ -156,44 +153,105 @@ object MimaServiceOperation {
         def default: A
         def codeTooBig(value: CodeTooBig): A = default
         def invalidScalaVersion(value: InvalidScalaVersion): A = default
-        def compilationFailed(value: CompilationFailed): A = default
       }
     }
 
     implicit val schema: Schema[CreateComparisonError] = union(
       CreateComparisonError.CodeTooBigCase.alt,
       CreateComparisonError.InvalidScalaVersionCase.alt,
-      CreateComparisonError.CompilationFailedCase.alt,
     ){
       _.$ordinal
     }
     def liftError(throwable: Throwable): Option[CreateComparisonError] = throwable match {
       case e: CodeTooBig => Some(CreateComparisonError.CodeTooBigCase(e))
       case e: InvalidScalaVersion => Some(CreateComparisonError.InvalidScalaVersionCase(e))
-      case e: CompilationFailed => Some(CreateComparisonError.CompilationFailedCase(e))
       case _ => None
     }
     def unliftError(e: CreateComparisonError): Throwable = e match {
       case CreateComparisonError.CodeTooBigCase(e) => e
       case CreateComparisonError.InvalidScalaVersionCase(e) => e
-      case CreateComparisonError.CompilationFailedCase(e) => e
     }
   }
-  final case class GetComparison(input: GetComparisonInput) extends MimaServiceOperation[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] {
-    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = impl.getComparison(input.id)
+  final case class GetStatus(input: GetStatusInput) extends MimaServiceOperation[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] {
+    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] = impl.getStatus(input.id)
     def ordinal: Int = 1
-    def endpoint: smithy4s.Endpoint[MimaServiceOperation,GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = GetComparison
+    def endpoint: smithy4s.Endpoint[MimaServiceOperation,GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] = GetStatus
   }
-  object GetComparison extends smithy4s.Endpoint[MimaServiceOperation,GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] {
-    val schema: OperationSchema[GetComparisonInput, Nothing, GetComparisonOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "GetComparison"))
+  object GetStatus extends smithy4s.Endpoint[MimaServiceOperation,GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] {
+    val schema: OperationSchema[GetStatusInput, Nothing, GetStatusOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "GetStatus"))
+      .withInput(GetStatusInput.schema)
+      .withOutput(GetStatusOutput.schema)
+      .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("GET"), uri = smithy.api.NonEmptyString("/api/status/{id}"), code = 200), smithy.api.Readonly())
+    def wrap(input: GetStatusInput): GetStatus = GetStatus(input)
+  }
+  final case class GetComparison(input: GetComparisonInput) extends MimaServiceOperation[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] {
+    def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] = impl.getComparison(input.id)
+    def ordinal: Int = 2
+    def endpoint: smithy4s.Endpoint[MimaServiceOperation,GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] = GetComparison
+  }
+  object GetComparison extends smithy4s.Endpoint[MimaServiceOperation,GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] {
+    val schema: OperationSchema[GetComparisonInput, MimaServiceOperation.GetComparisonError, GetComparisonOutput, Nothing, Nothing] = Schema.operation(ShapeId("fullstack_scala.protocol", "GetComparison"))
       .withInput(GetComparisonInput.schema)
+      .withError(GetComparisonError.errorSchema)
       .withOutput(GetComparisonOutput.schema)
       .withHints(smithy.api.Http(method = smithy.api.NonEmptyString("GET"), uri = smithy.api.NonEmptyString("/api/comparison/{id}"), code = 200), smithy.api.Readonly())
     def wrap(input: GetComparisonInput): GetComparison = GetComparison(input)
   }
+  sealed trait GetComparisonError extends scala.Product with scala.Serializable { self =>
+    @inline final def widen: GetComparisonError = this
+    def $ordinal: Int
+
+    object project {
+      def notFound: Option[NotFound] = GetComparisonError.NotFoundCase.alt.project.lift(self).map(_.notFound)
+    }
+
+    def accept[A](visitor: GetComparisonError.Visitor[A]): A = this match {
+      case value: GetComparisonError.NotFoundCase => visitor.notFound(value.notFound)
+    }
+  }
+  object GetComparisonError extends ErrorSchema.Companion[GetComparisonError] {
+
+    def notFound(notFound: NotFound): GetComparisonError = NotFoundCase(notFound)
+
+    val id: ShapeId = ShapeId("fullstack_scala.protocol", "GetComparisonError")
+
+    val hints: Hints = Hints.empty
+
+    final case class NotFoundCase(notFound: NotFound) extends GetComparisonError { final def $ordinal: Int = 0 }
+
+    object NotFoundCase {
+      val hints: Hints = Hints.empty
+      val schema: Schema[GetComparisonError.NotFoundCase] = bijection(NotFound.schema.addHints(hints), GetComparisonError.NotFoundCase(_), _.notFound)
+      val alt = schema.oneOf[GetComparisonError]("NotFound")
+    }
+
+    trait Visitor[A] {
+      def notFound(value: NotFound): A
+    }
+
+    object Visitor {
+      trait Default[A] extends Visitor[A] {
+        def default: A
+        def notFound(value: NotFound): A = default
+      }
+    }
+
+    implicit val schema: Schema[GetComparisonError] = union(
+      GetComparisonError.NotFoundCase.alt,
+    ){
+      _.$ordinal
+    }
+    def liftError(throwable: Throwable): Option[GetComparisonError] = throwable match {
+      case e: NotFound => Some(GetComparisonError.NotFoundCase(e))
+      case _ => None
+    }
+    def unliftError(e: GetComparisonError): Throwable = e match {
+      case GetComparisonError.NotFoundCase(e) => e
+    }
+  }
   final case class Health() extends MimaServiceOperation[Unit, Nothing, HealthOutput, Nothing, Nothing] {
     def run[F[_, _, _, _, _]](impl: MimaServiceGen[F]): F[Unit, Nothing, HealthOutput, Nothing, Nothing] = impl.health()
-    def ordinal: Int = 2
+    def ordinal: Int = 3
     def input: Unit = ()
     def endpoint: smithy4s.Endpoint[MimaServiceOperation,Unit, Nothing, HealthOutput, Nothing, Nothing] = Health
   }

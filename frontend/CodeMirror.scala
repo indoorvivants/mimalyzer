@@ -15,6 +15,11 @@ trait CodeMirrorInstance extends js.Object:
       eventName: String,
       listener: js.Function1[CodeMirrorValue, Unit]
   ): this.type = js.native
+  def addLineClass(
+      line: Int,
+      where: String,
+      className: String
+  ): this.type = js.native
 end CodeMirrorInstance
 
 @js.native

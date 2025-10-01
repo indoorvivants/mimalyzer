@@ -1,51 +1,127 @@
 package mimalyzer
 package backend
 
+import cats.effect.*
+import cats.syntax.all.*
 import com.comcast.ip4s.*
-import cats.effect.*, std.*
+import decline_derive.*
 import org.http4s.ember.server.EmberServerBuilder
-import fullstack_scala.protocol.ComparisonId
-import concurrent.duration.*
+import org.http4s.{HttpApp, MediaType}
+
+import java.util.UUID
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-object Server extends IOApp:
+import std.*
+import concurrent.duration.*
+
+enum CLI derives CommandApplication:
+  case Server(port: Option[Int], host: Option[String])
+  case Worker(port: Option[Int], host: Option[String])
+
+object Mimalyzer extends IOApp:
 
   override def run(args: List[String]) =
-    val port = args.headOption
-      .flatMap(_.toIntOption)
-      .flatMap(Port.fromInt)
-      .getOrElse(sys.error("port missing or invalid"))
+    val cli = CommandApplication.parseOrExit[CLI](args, sys.env)
 
-    val server =
-      for
-        ref <- IO.ref(Map.empty[ComparisonId, State]).toResource
-        env <- IO.envForIO.entries.map(_.toMap).toResource
-        scala213 <- IO(Scala213Compiler.load(env)).toResource
-        scala212 <- IO(Scala212Compiler.load(env)).toResource
-        scala3 <- IO(Scala3Compiler.load(env)).toResource
-        singleThreadEC <- Resource
-          .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
-          .map(ExecutionContext.fromExecutorService)
+    cli match
+      case cli: CLI.Server =>
+        val (port, host) = defaults(cli.port, cli.host)
 
-        mutex <- Mutex[IO].toResource
-        compilers = Compilers(scala213, scala212, scala3)
-        routes <- routesResource(
-          TestServiceImpl(ref, mutex, compilers, singleThreadEC)
-        )
-        server <- EmberServerBuilder
-          .default[IO]
-          .withPort(port)
-          .withHost(host"0.0.0.0")
-          .withHttpApp(handleErrors(scribe.cats.io, routes))
-          .withShutdownTimeout(0.seconds)
-          .build
-          .map(_.baseUri)
-          .evalTap(uri => IO.println(s"Server running on $uri"))
-      yield server
+        val server =
+          for
+            store <- Store.open()
+            worker <- setupWorker(store)
+            routes <- routesResource(
+              TestServiceImpl(store)
+            )
+            server <- EmberServerBuilder
+              .default[IO]
+              .withPort(port)
+              .withHost(host)
+              .withHttpApp(handleErrors(scribe.cats.io, routes))
+              .withShutdownTimeout(0.seconds)
+              .build
+              .map(_.baseUri)
+              .evalTap(uri => IO.println(s"Server running on $uri"))
+              .parProductL(worker.process)
+          yield server
 
-    server.useForever
-      .as(ExitCode.Success)
+        server.useForever
+          .as(ExitCode.Success)
+
+      case cli: CLI.Worker =>
+        val (port, host) = defaults(cli.port, cli.host)
+
+        import org.http4s.dsl.io.*
+
+        val process =
+          for
+            store <- Store.open()
+            worker <- setupWorker(store)
+            routes = HttpApp[IO]:
+              case GET -> Root / "health" =>
+                Ok("""{"status": "ok"}""").map(
+                  _.withContentType(
+                    org.http4s.headers.`Content-Type`(
+                      MediaType.application.json
+                    )
+                  )
+                )
+
+            server <- EmberServerBuilder
+              .default[IO]
+              .withPort(port)
+              .withHost(host)
+              .withHttpApp(handleErrors(scribe.cats.io, routes))
+              .withShutdownTimeout(0.seconds)
+              .build
+              .map(_.baseUri)
+              .evalTap(uri => IO.println(s"Worker health running on $uri"))
+              .parProductL(worker.process)
+          yield server
+        end process
+
+        process.useForever.as(ExitCode.Success)
+    end match
 
   end run
-end Server
+end Mimalyzer
+
+def defaults(portOpt: Option[Int], hostOpt: Option[String]) =
+  val port = portOpt
+    .flatMap(port =>
+      Port.fromInt(port).orElse(sys.error(s"Invalid port $port"))
+    )
+    .getOrElse(port"8080")
+
+  val host = hostOpt
+    .flatMap(host =>
+      Host.fromString(host).orElse(sys.error(s"Invalid host $host"))
+    )
+    .getOrElse(host"localhost")
+
+  port -> host
+end defaults
+
+def setupWorker(store: Store) =
+  for
+    env <- IO.envForIO.entries.map(_.toMap).toResource
+    scala213 <- IO(Scala213Compiler.load(env)).toResource
+    scala212 <- IO(Scala212Compiler.load(env)).toResource
+    scala3 <- IO(Scala3Compiler.load(env)).toResource
+    singleThreadEC <- Resource
+      .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
+      .map(ExecutionContext.fromExecutorService)
+
+    compilers = Compilers(scala213, scala212, scala3)
+    workerConfig <- WorkerConfig.fromEnv.toResource
+    worker = Worker(
+      UUID.randomUUID(),
+      store,
+      workerConfig,
+      compilers,
+      singleThreadEC,
+      store.setProcessingStep
+    )
+  yield worker

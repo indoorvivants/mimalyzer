@@ -92,7 +92,22 @@ run-backend: $(bridges) $(library_classpaths) $(compiler_classpaths)
 		export SCALA_212_COMPILER_CLASSPATH_FILE="../.dev/scala212.compiler.classpath" && \
 		export SCALA_212_CLASSPATH_FILE="../.dev/scala212.classpath" && \
 		export SCALA_212_BRIDGE="../.dev/scala212bridge.jar" && \
-		scala-cli --power run -w . --restart -- 9977
+		scala-cli --power run -w *.scala --restart -- server --port 9977
+
+
+run-worker: $(bridges) $(library_classpaths) $(compiler_classpaths)
+	cd backend && \
+		export SCALA_213_COMPILER_CLASSPATH_FILE="../.dev/scala213.compiler.classpath" && \
+		export SCALA_213_CLASSPATH_FILE="../.dev/scala213.classpath" && \
+		export SCALA_213_BRIDGE="../.dev/scala213bridge.jar" && \
+		export SCALA_3_COMPILER_CLASSPATH_FILE="../.dev/scala3.compiler.classpath" && \
+		export SCALA_3_CLASSPATH_FILE="../.dev/scala3.classpath" && \
+		export SCALA_3_BRIDGE="../.dev/scala3bridge.jar" && \
+		export SCALA_212_COMPILER_CLASSPATH_FILE="../.dev/scala212.compiler.classpath" && \
+		export SCALA_212_CLASSPATH_FILE="../.dev/scala212.classpath" && \
+		export SCALA_212_BRIDGE="../.dev/scala212bridge.jar" && \
+		scala-cli --power run -w *.scala --restart -- worker --port 9977
+
 
 run-frontend:
 	cd frontend && npm install && npm run dev

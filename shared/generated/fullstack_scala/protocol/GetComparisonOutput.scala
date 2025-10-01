@@ -6,7 +6,7 @@ import smithy4s.ShapeId
 import smithy4s.ShapeTag
 import smithy4s.schema.Schema.struct
 
-final case class GetComparisonOutput(comparison: Comparison, problems: List[Problem])
+final case class GetComparisonOutput(comparison: Comparison)
 
 object GetComparisonOutput extends ShapeTag.Companion[GetComparisonOutput] {
   val id: ShapeId = ShapeId("fullstack_scala.protocol", "GetComparisonOutput")
@@ -16,10 +16,9 @@ object GetComparisonOutput extends ShapeTag.Companion[GetComparisonOutput] {
   ).lazily
 
   // constructor using the original order from the spec
-  private def make(comparison: Comparison, problems: List[Problem]): GetComparisonOutput = GetComparisonOutput(comparison, problems)
+  private def make(comparison: Comparison): GetComparisonOutput = GetComparisonOutput(comparison)
 
   implicit val schema: Schema[GetComparisonOutput] = struct(
     Comparison.schema.required[GetComparisonOutput]("comparison", _.comparison),
-    ProblemsList.underlyingSchema.required[GetComparisonOutput]("problems", _.problems),
   )(make).withId(id).addHints(hints)
 }

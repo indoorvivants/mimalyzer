@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.mark {
+    background-color: rgba(255, 0, 0, 0.23);
+}

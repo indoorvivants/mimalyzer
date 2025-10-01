@@ -12,19 +12,33 @@ service MimaService {
         Health
         GetComparison
         CreateComparison
+        GetStatus
     ]
 }
-
 
 @readonly
 @http(method: "GET", uri: "/api/health", code: 200)
 operation Health {
-  output := {
-    @required
-    status: String
-  } 
+    output := {
+        @required
+        status: String
+    }
 }
 
+@readonly
+@http(method: "GET", uri: "/api/status/{id}", code: 200)
+operation GetStatus {
+    input := {
+        @required
+        @httpLabel
+        id: ComparisonId
+    }
+
+    output := {
+        @required
+        status: ComparisonStatus
+    }
+}
 
 @readonly
 @http(method: "GET", uri: "/api/comparison/{id}", code: 200)
@@ -38,10 +52,42 @@ operation GetComparison {
     output := {
         @required
         comparison: Comparison
-
-        @required
-        problems: ProblemsList
     }
+
+    errors: [
+        NotFound
+    ]
+}
+
+structure Waiting {}
+
+structure Completed {}
+
+@error("client")
+@httpError(400)
+structure NotFound {}
+
+structure Processing {
+    step: ProcessingStep
+    remaining: Integer
+}
+
+@error("client")
+@httpError(400)
+structure CompilationFailed {
+    @required
+    which: CodeLabel
+
+    @required
+    errorOut: String
+}
+
+union ComparisonStatus {
+    waiting: Waiting
+    processing: Processing
+    failed: CompilationFailed
+    completed: Completed
+    notFound: NotFound
 }
 
 @idempotent
@@ -55,16 +101,11 @@ operation CreateComparison {
     output := {
         @required
         comparisonId: ComparisonId
-
-        mimaProblems: MimaProblems
-
-        tastyMimaProblems: TastyMimaProblems
     }
 
     errors: [
         CodeTooBig
         InvalidScalaVersion
-        CompilationFailed
     ]
 }
 
@@ -95,16 +136,6 @@ structure CodeTooBig {
     which: CodeLabel
 }
 
-@error("client")
-@httpError(400)
-structure CompilationFailed {
-    @required
-    which: CodeLabel
-
-    @required
-    errorOut: String
-}
-
 enum CodeLabel {
     AFTER
     BEFORE
@@ -115,6 +146,7 @@ list ProblemsList {
 }
 
 structure Problem {
+    @required
     message: String
 }
 
@@ -124,6 +156,10 @@ structure Comparison {
 
     @required
     attributes: ComparisonAttributes
+
+    mimaProblems: MimaProblems
+
+    tastyMimaProblems: TastyMimaProblems
 }
 
 structure ComparisonAttributes {
@@ -146,4 +182,12 @@ enum ScalaVersion {
     SCALA_212 = "2.12"
     SCALA_213 = "2.13"
     SCALA_3_LTS = "3 LTS"
+}
+
+enum ProcessingStep {
+    PICKED_UP = "picked-up"
+    CODE_BEFORE_COMPILED = "code-before-compiled"
+    CODE_AFTER_COMPILED = "code-after-compiled"
+    MIMA_FINISHED = "mima-finished"
+    TASTY_MIMA_FINISHED = "tasty-mima-finished"
 }

@@ -24,16 +24,26 @@ extension (c: CompilationError)
   def render =
     s"[LINE=${c.line}, COLUMN=${c.column}] ${c.msg}"
 
-case class Summary(mima: List[Problem], tasty: List[Problem])
+end extension
+
+enum ComparisonResult:
+  case CompilationFailed(which: CodeLabel, errorOut: String)
+  case Success(
+      mimaProblems: MimaProblems,
+      tastyMimaProblems: TastyMimaProblems
+  )
+
+case class EarlyReturn(e: ComparisonResult) extends Throwable
 
 def analyseFileCode(
     oldScala: ScalaCode,
     newScala: ScalaCode,
     compiler: CompilerInterface,
     singleThreadExecutor: ExecutionContext,
-    scalaVersion: ScalaVersion
-): IO[Summary] =
-  for
+    scalaVersion: ScalaVersion,
+    progress: ProcessingStep => IO[Unit]
+): IO[ComparisonResult] =
+  val comp = for
     classDirOld <- files.createTempDirectory
     classDirNew <- files.createTempDirectory
 
@@ -48,9 +58,24 @@ def analyseFileCode(
       .timeoutTo(
         5.seconds,
         IO.raiseError(
-          CompilationFailed(CodeLabel.BEFORE, "Took longer than 5 seconds")
+          EarlyReturn(
+            ComparisonResult
+              .CompilationFailed(CodeLabel.BEFORE, "Took longer than 5 seconds")
+          )
         )
       )
+
+    _ <- progress(ProcessingStep.CODE_BEFORE_COMPILED)
+
+    _ <- IO.raiseWhen(compiledOld.errors().nonEmpty)(
+      EarlyReturn(
+        ComparisonResult
+          .CompilationFailed(
+            CodeLabel.BEFORE,
+            compiledOld.errors().map(_.render).mkString("\n")
+          )
+      )
+    )
 
     compiledNew <- IO(
       compiler.compile(
@@ -63,21 +88,21 @@ def analyseFileCode(
       .timeoutTo(
         5.seconds,
         IO.raiseError(
-          CompilationFailed(CodeLabel.BEFORE, "Took longer than 5 seconds")
+          EarlyReturn(
+            ComparisonResult
+              .CompilationFailed(CodeLabel.AFTER, "Took longer than 5 seconds")
+          )
         )
       )
-
-    _ <- IO.raiseWhen(compiledOld.errors().nonEmpty)(
-      CompilationFailed(
-        CodeLabel.BEFORE,
-        compiledOld.errors().map(_.render).mkString("\n")
-      )
-    )
+    _ <- progress(ProcessingStep.CODE_AFTER_COMPILED)
 
     _ <- IO.raiseWhen(compiledNew.errors().nonEmpty)(
-      CompilationFailed(
-        CodeLabel.AFTER,
-        compiledNew.errors().map(_.render).mkString("\n")
+      EarlyReturn(
+        ComparisonResult
+          .CompilationFailed(
+            CodeLabel.AFTER,
+            compiledNew.errors().map(_.render).mkString("\n")
+          )
       )
     )
 
@@ -95,6 +120,8 @@ def analyseFileCode(
       )
     )
 
+    _ <- progress(ProcessingStep.MIMA_FINISHED)
+
     tastymima = new TastyMiMa(new Config)
     oldClasspath = javaLib ::: entryBefore +: classpathBefore
     newClasspath = javaLib ::: entryAfter +: classpathAfter
@@ -109,13 +136,20 @@ def analyseFileCode(
         )
     )
 
+    _ <- progress(ProcessingStep.TASTY_MIMA_FINISHED)
+
     _ <- files.deleteRecursively(classDirOld)
     _ <- files.deleteRecursively(classDirNew)
-  yield Summary(
-    mima = problems.map(p => Problem(Some(p.toString))),
-    tasty = tastyProblems.toList.flatten.map(p => Problem(Some(p.toString)))
+  yield ComparisonResult.Success(
+    mimaProblems = MimaProblems(problems.map(p => Problem(p.toString))),
+    tastyMimaProblems = TastyMimaProblems(
+      tastyProblems.toList.flatten.map(p => Problem(p.toString))
+    )
   )
-  end for
+  end comp
+
+  comp.recover:
+    case EarlyReturn(e) => e
 end analyseFileCode
 
 lazy val javaLib: List[Path] =
