@@ -181,14 +181,15 @@ class Store private (db: Resource[IO, Session[IO]]):
           update compilation_results
           set worker_id = ${uuid}, worker_checked_in_at = now(), state = ${C.state}
           where id
-            in (select id from compilation_results where (now() - worker_checked_in_at > interval '$int4 seconds') and state = ${C.state} limit $int4)
+            in (select id from compilation_results where (now() - worker_checked_in_at > interval '$int4 seconds') and state NOT IN  (${C.state
+            .list(2)}) limit $int4)
           returning id
           """.query(uuid),
         (
           workerId,
           State.Processing,
           staleness.toSeconds.toInt,
-          State.Processing,
+          List(State.Completed, State.Failed),
           limit
         ),
         limit
@@ -223,7 +224,11 @@ class Store private (db: Resource[IO, Session[IO]]):
   def setProcessingStep(id: JobId, step: ProcessingStep): IO[Unit] =
     db.use(
       _.execute(
-        sql"update compilation_results set state=${C.state}, processing_step = ${C.processingStep} where id = ${C.jobId}".command
+        sql"""update compilation_results set
+            state=${C.state},
+            processing_step = ${C.processingStep},
+            worker_checked_in_at = now()
+            where id = ${C.jobId}""".command
       )(State.Processing, step, id)
     ).void
 
@@ -249,7 +254,8 @@ class Store private (db: Resource[IO, Session[IO]]):
         update compilation_results
             set mima_problems = ${C.mimaProblems.opt},
                 tasty_mima_problems = ${C.tastyMimaProblems.opt},
-                state = ${C.state}
+                state = ${C.state},
+                worker_checked_in_at = now()
             where id = ${uuid}
     """.command)(
             Option.when(mimaProblems.problems.nonEmpty)(
