@@ -4,17 +4,14 @@ import cats.effect.*
 import com.typesafe.tools.mima.lib.MiMaLib
 import fs2.io.file.Files
 import fs2.io.process.Processes
-import fullstack_scala.protocol.{CodeLabel, CompilationFailed, *}
 import mimalyzer.iface.*
+import mimalyzer.protocol.{CodeLabel, *}
 import tastymima.TastyMiMa
 import tastymima.intf.Config
 
-import java.nio.file.Paths
+import java.nio.file.{FileSystems, Path, Paths}
 import scala.concurrent.ExecutionContext
-import java.nio.file.Path
-import java.nio.file.FileSystems
-import java.net.URI
-import tastyquery.jdk.ClasspathLoaders
+
 import concurrent.duration.*
 
 val files = Files[IO]
@@ -25,15 +22,6 @@ extension (c: CompilationError)
     s"[LINE=${c.line}, COLUMN=${c.column}] ${c.msg}"
 
 end extension
-
-enum ComparisonResult:
-  case CompilationFailed(which: CodeLabel, errorOut: String)
-  case Success(
-      mimaProblems: MimaProblems,
-      tastyMimaProblems: TastyMimaProblems
-  )
-
-case class EarlyReturn(e: ComparisonResult) extends Throwable
 
 def analyseFileCode(
     oldScala: ScalaCode,

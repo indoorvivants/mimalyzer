@@ -7,42 +7,15 @@ import org.typelevel.otel4s.trace.Tracer
 import dumbo.Dumbo
 import dumbo.ConnectionConfig
 
-import fullstack_scala.protocol.*
+import mimalyzer.protocol.*
 import java.util.UUID
 import scala.concurrent.duration.FiniteDuration
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import skunk.codec.all.*
 import smithy4s.Newtype
-import fullstack_scala.protocol.CodeLabel.AFTER
-import fullstack_scala.protocol.CodeLabel.BEFORE
-
-enum State:
-  case Added
-  case Completed
-  case Failed
-  case Processing
-
-  def stringValue =
-    this match
-      case Added      => "added"
-      case Completed  => "completed"
-      case Failed     => "failed"
-      case Processing => "processing"
-
-end State
-
-case class CompilationJob(
-    comparisonId: ComparisonId,
-    jobId: JobId,
-    codeBefore: ScalaCode,
-    codeAfter: ScalaCode,
-    scalaVersion: ScalaVersion
-)
-
-object State:
-  val mapping = State.values.map(v => v.stringValue -> v).toMap
-  def fromString(s: String) = mapping.get(s)
+import mimalyzer.protocol.CodeLabel.AFTER
+import mimalyzer.protocol.CodeLabel.BEFORE
 
 class Store private (db: Resource[IO, Session[IO]]):
   def schedule(attributes: ComparisonAttributes): IO[ComparisonId] =

@@ -1,34 +1,10 @@
 package mimalyzer
 
-import java.net.URLClassLoader
-import java.net.URL
-import java.io.File
-import java.util.ServiceLoader
 import mimalyzer.iface.CompilerInterface
 
-final class FilteringClassLoader(parent: ClassLoader, sc: Boolean = false)
-    extends ClassLoader(parent):
-  private val parentPrefixes = Array(
-    "java.",
-    "javax.",
-    "sun.reflect.",
-    "jdk.internal.reflect.",
-    "mimalyzer.",
-    "sun.misc."
-  ) ++ Option.when(sc)("scala.").toArray
-
-  override def loadClass(name: String, resolve: Boolean): Class[?] =
-    if parentPrefixes.exists(name.startsWith) then
-      super.loadClass(name, resolve)
-    else null
-end FilteringClassLoader
-
-object CompilerClassLoader:
-  def create(classpath: Array[URL], sc: Boolean = false): ClassLoader =
-    new URLClassLoader(
-      classpath,
-      new FilteringClassLoader(getClass.getClassLoader(), sc)
-    )
+import java.io.File
+import java.net.URL
+import java.util.ServiceLoader
 
 opaque type Scala213Compiler <: CompilerInterface = CompilerInterface
 opaque type Scala212Compiler <: CompilerInterface = CompilerInterface

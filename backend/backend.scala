@@ -4,7 +4,7 @@ package backend
 import cats.data.Kleisli
 import cats.effect.IO
 import cats.effect.std.UUIDGen
-import fullstack_scala.protocol.*
+import mimalyzer.protocol.*
 import org.http4s.HttpApp
 import scribe.Scribe
 import smithy4s.http4s.SimpleRestJsonBuilder

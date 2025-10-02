@@ -1,6 +1,6 @@
 $version: "2.0"
 
-namespace fullstack_scala.protocol
+namespace mimalyzer.protocol
 
 use alloy#simpleRestJson
 use alloy#uuidFormat

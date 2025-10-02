@@ -12,7 +12,6 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-import std.*
 import concurrent.duration.*
 
 enum CLI derives CommandApplication:
@@ -43,7 +42,7 @@ object Mimalyzer extends IOApp:
               .withShutdownTimeout(0.seconds)
               .build
               .map(_.baseUri)
-              .evalTap(uri => IO.println(s"Server running on $uri"))
+              .evalTap(uri => Log.info(s"Server running on $uri"))
               .parProductL(worker.process)
           yield server
 
@@ -77,7 +76,7 @@ object Mimalyzer extends IOApp:
               .withShutdownTimeout(0.seconds)
               .build
               .map(_.baseUri)
-              .evalTap(uri => IO.println(s"Worker health running on $uri"))
+              .evalTap(uri => Log.info(s"Worker health running on $uri"))
               .parProductL(worker.process)
           yield server
         end process

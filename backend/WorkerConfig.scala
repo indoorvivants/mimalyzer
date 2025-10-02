@@ -4,7 +4,6 @@ import cats.effect.*, std.Env
 import cats.syntax.all.*
 import scala.concurrent.duration.*
 
-// TODO: integrate
 case class WorkerConfig(
     workStealLimit: Int,
     leaseLimit: Int,

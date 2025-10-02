@@ -1,10 +1,12 @@
 package mimalyzer
 
-import cats.effect.*, std.*
-import fullstack_scala.protocol.*
-import scala.concurrent.duration.FiniteDuration
+import cats.effect.*
 import cats.syntax.all.*
+import mimalyzer.protocol.*
+
 import scala.concurrent.ExecutionContext
+
+import std.*
 
 // TODO: fix this
 type WorkerId = java.util.UUID
