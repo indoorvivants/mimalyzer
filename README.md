@@ -1,6 +1,6 @@
 # Mimalyzer
 
-**https://mimalyzer.fly.dev/**
+**https://mimalyzer.indoorvivants.com/**
 
 Quickly verify whether the change you're about to make is binary compatible in Scala and tasty-compatible in Scala 3.
 
