@@ -60,11 +60,11 @@ def fragmentStatusPoller(
     }
 
 def fragmentScalaPicker(scalaVersion: Var[String]) = div(
-  cls := "flex flex-row gap-8 text-2xl place-content-center",
+  cls := "scala-picker-container",
   ScalaVersion.values.map: sv =>
     p(
-      cls := "flex flex-row gap-2 m-2 border-2 border-slate-200 p-4 rounded-md cursor-pointer",
-      cls("bg-rose-700 text-white") <-- scalaVersion.signal.map(
+      cls := "scala-version-option",
+      cls("scala-version-selected") <-- scalaVersion.signal.map(
         _ == sv.value
       ),
       onClick.mapTo(sv.value) --> scalaVersion,

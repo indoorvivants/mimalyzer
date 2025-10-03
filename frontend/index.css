@@ -5,3 +5,123 @@
 .mark {
     background-color: rgba(255, 0, 0, 0.23);
 }
+
+/* Scala picker styles */
+.scala-picker-container {
+    @apply flex flex-row gap-8 text-2xl place-content-center;
+}
+
+.scala-version-option {
+    @apply flex flex-row gap-2 m-2 border-2 border-slate-500 p-4 rounded-md cursor-pointer;
+}
+
+.scala-version-selected {
+    @apply bg-rose-700 text-white border-2 border-rose-900;
+}
+
+/* Main page layout */
+.main-content-container {
+    @apply mx-auto w-10/12 bg-white/70 p-6 rounded-lg max-w-screen-xl flex flex-col gap-4;
+}
+
+.code-input-row {
+    @apply w-full flex md:flex-row lg:flex-row xl:flex-row sm:flex-col gap-4;
+}
+
+.code-input-column {
+    @apply flex w-6/12 flex-col gap-2 grow-0 w-6/12 w-full;
+}
+
+.code-input-header {
+    @apply font-bold;
+}
+
+.code-input-description {
+    /* @apply text-md; */
+}
+
+.code-textarea {
+    @apply w-full border-2 border-slate-400 p-2;
+}
+
+.submit-button {
+    @apply bg-sky-700 text-lg font-bold p-2 text-white;
+}
+
+.code-preview-container {
+    @apply whitespace-pre-line rounded-md p-4;
+}
+
+/* Links */
+.basic-link {
+    @apply text-indigo-600 hover:no-underline underline;
+}
+
+/* Header */
+.main-title {
+    @apply text-6xl;
+}
+
+.header-description {
+    /* @apply font-italic; */
+    @apply text-sm;
+}
+
+/* Footer */
+.footer-container {
+    @apply text-sm;
+}
+
+/* Static code snippets */
+.snippet-controls {
+    @apply flex flex-row gap-2;
+}
+
+.snippet-version-display {
+    @apply text-xl font-bold m-2;
+}
+
+.snippet-code-row {
+    @apply w-full flex lg:flex-row xl:flex-row sm:flex-col md:flex-col gap-4 m-2;
+}
+
+
+.snippet-code-column {
+    @apply flex-none;
+}
+
+.snippet-code-title {
+    @apply text-xl;
+}
+
+/* Error list */
+.error-list {
+    @apply m-2 pl-4 text-sm;
+}
+
+.error-list-item {
+    @apply list-disc m-2;
+
+}
+
+.msg-info {
+    @apply bg-emerald-300 border-2 border-emerald-800 p-2 m-2
+}
+
+.msg-error {
+    @apply bg-rose-300 border-2 border-rose-800 p-2 m-2;
+}
+
+p.error-details {
+    @apply flex flex-row gap-2;
+}
+
+span.error-tag {
+    @apply bg-yellow-200 p-1 rounded-md;
+}
+
+span.error-symbol {
+    @apply bg-sky-200 p-1 rounded-md;
+}
+
+p.error-message {}

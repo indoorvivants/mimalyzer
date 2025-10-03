@@ -77,31 +77,31 @@ def renderMainPage(
     button(
       "Check it",
       onClick.mapToStrict(Action.Submit) --> actionBus,
-      cls := "bg-sky-700 text-lg font-bold p-2 text-white"
+      cls := "submit-button"
     )
 
   div(
     poller,
-    cls := "content mx-auto w-8/12 bg-white/70 p-6 rounded-xl max-w-screen-lg flex flex-col gap-4",
+    cls := "main-content-container",
     fragmentHeader,
     fragmentStatusPoller(pollingState, readyState),
     div(
-      cls := "w-full flex flex-row gap-4",
+      cls := "code-input-row",
       div(
-        cls := "flex flex-col gap-2 grow-0 w-6/12",
-        h2("Scala code before", cls := "font-bold"),
+        cls := "code-input-column",
+        h2("Scala code before", cls := "code-input-header"),
         p(
           "This simulates the previous version of your library",
-          cls := "text-md"
+          cls := "code-input-description"
         ),
         codeMirrorTextArea(oldScalaCode)
       ),
       div(
-        cls := "flex flex-col gap-2 grow-0 w-6/12",
-        h2("Scala code after", cls := "font-bold"),
+        cls := "code-input-column",
+        h2("Scala code after", cls := "code-input-header"),
         p(
           "This simulates the next version of your library",
-          cls := "text-md"
+          cls := "code-input-description"
         ),
         codeMirrorTextArea(newScalaCode)
       )
@@ -109,7 +109,7 @@ def renderMainPage(
     fragmentScalaPicker(scalaVersion),
     submitButton,
     pre(
-      cls := "whitespace-pre-line rounded-md text-2xl p-4",
+      cls := "code-preview-container",
       fragmentMimaErrors(
         readyState.signal.changes.collectSome.flatMapSwitch(id =>
           Api.client.stream(_.getComparison(id))
@@ -123,7 +123,7 @@ end renderMainPage
 
 def codeMirrorTextArea(target: Var[String]) =
   textArea(
-    cls := "w-full border-2 border-slate-400 p-2 text-md",
+    cls := "code-textarea",
     onInput.mapToValue --> target,
     value <-- target,
     onMountCallback(el =>

@@ -15,7 +15,7 @@ def fragmentStaticScalaSnippets(
     child <-- gso.map: gso =>
       div(
         div(
-          cls := "flex flex-row gap-2",
+          cls := "snippet-controls",
           a(
             "⋔ Fork",
             href := "#",
@@ -38,19 +38,19 @@ def fragmentStaticScalaSnippets(
           )
         ),
         p(
-          cls := "text-xl font-bold m-2",
+          cls := "snippet-version-display",
           "Scala version " + gso.comparison.attributes.scalaVersion.value
         ),
         div(
-          cls := "w-full flex flex-row gap-4 m-2",
+          cls := "snippet-code-row",
           div(
-            cls := "flex-1",
-            p("Scala code before", cls := "text-xl"),
+            cls := "snippet-code-column",
+            p("Scala code before", cls := "snippet-code-title"),
             codeBlock("scala", gso.comparison.attributes.beforeScalaCode.value)
           ),
           div(
-            cls := "flex-1",
-            p("Scala code after", cls := "text-xl"),
+            cls := "snippet-code-column",
+            p("Scala code after", cls := "snippet-code-title"),
             codeBlock("scala", gso.comparison.attributes.afterScalaCode.value)
           )
         )

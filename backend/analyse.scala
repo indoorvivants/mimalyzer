@@ -129,9 +129,12 @@ def analyseFileCode(
     _ <- files.deleteRecursively(classDirOld)
     _ <- files.deleteRecursively(classDirNew)
   yield ComparisonResult.Success(
-    mimaProblems = MimaProblems(problems.map(p => Problem(p.toString))),
+    mimaProblems = MimaProblems(
+      problems.map(p => Problem(p.description("new"), tag = Some(p.getClass.getSimpleName), symbol = p.matchName))
+    ),
     tastyMimaProblems = TastyMimaProblems(
-      tastyProblems.toList.flatten.map(p => Problem(p.toString))
+      tastyProblems.toList.flatten
+        .map(p => Problem(p.getDescription(), tag = Some(p.kind.name()), symbol = Some(p.getPathString())))
     )
   )
   end comp

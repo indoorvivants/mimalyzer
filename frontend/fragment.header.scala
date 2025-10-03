@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L.*
 import com.raquo.waypoint.Router
 
 def fragmentHeader(using Router[Page]) = div(
-  h1(a("Mimalyzer", cls := "text-6xl", navigateTo(Page.Main))),
+  h1(a("Mimalyzer", cls := "main-title", navigateTo(Page.Main))),
   p(
     "Check whether your code change is ",
     a(
@@ -24,6 +24,6 @@ def fragmentHeader(using Router[Page]) = div(
       "TASTy-MiMa",
       basicLink
     ),
-    cls := "font-italic text-sm"
+    cls := "header-description"
   )
 )

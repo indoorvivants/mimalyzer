@@ -146,6 +146,10 @@ list ProblemsList {
 }
 
 structure Problem {
+    tag: String
+
+    symbol: String
+
     @required
     message: String
 }

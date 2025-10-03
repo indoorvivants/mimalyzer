@@ -3,11 +3,11 @@ package mimalyzer.frontend
 import com.raquo.laminar.api.L.*
 
 val basicLink =
-  cls := "text-indigo-600 hover:no-underline underline"
+  cls := "basic-link"
 
 val footerFragment =
   div(
-    cls := "text-sm",
+    cls := "footer-container",
     "Made by ",
     a(
       href := "https://blog.indoorvivants.com",

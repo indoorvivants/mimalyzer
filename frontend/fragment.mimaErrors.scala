@@ -29,12 +29,6 @@ def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
           )
         )
       else
-        def renderProblems(pl: List[Problem]) =
-          ul(
-            cls := "m-4 pl-4 text-small",
-            pl.map(p => li(cls := "pl-2 list-disc", p.message))
-          )
-
         div(
           gso.comparison.mimaProblems.map: mima =>
             message(
@@ -58,4 +52,24 @@ def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
             )
         )
       end if
+  )
+
+private def renderProblems(pl: List[Problem]) =
+  ul(
+    cls := "error-list",
+    pl.map(problem =>
+      val details =
+        if problem.tag.nonEmpty || problem.symbol.nonEmpty then
+          p(
+            cls := "error-details",
+            problem.tag.map(t => span(cls := "error-tag", t)),
+            problem.symbol.map(t => span(cls := "error-symbol", t))
+          )
+        else emptyNode
+      li(
+        cls := "error-list-item",
+        details,
+        p(cls := "error-message", problem.message)
+      )
+    )
   )

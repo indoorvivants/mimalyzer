@@ -269,8 +269,8 @@ object C:
     base
       .imap[T](str => decode[T](str).right.get)(_.asJson.noSpacesSortKeys)
 
-  case class JsonProblem(msg: String) derives io.circe.Codec.AsObject:
-    def toProblem = Problem(msg)
+  case class JsonProblem(msg: String, tag: Option[String], symbol: Option[String]) derives io.circe.Codec.AsObject:
+    def toProblem = Problem(msg, tag, symbol)
 
   val comparisonId = imap(ComparisonId)(uuid)
   val scalaCode = imap(ScalaCode)(text)
@@ -278,7 +278,7 @@ object C:
   val processingStep = enumap(ProcessingStep)(text)
   val jsonProblemList = jsonLike[List[JsonProblem]](text)
   val problemList =
-    jsonProblemList.imap(_.map(_.toProblem))(_.map(p => JsonProblem(p.message)))
+    jsonProblemList.imap(_.map(_.toProblem))(_.map(p => JsonProblem(p.message, p.tag, p.symbol)))
   val mimaProblems = problemList.imap(MimaProblems(_))(_.problems)
   val tastyMimaProblems = problemList.imap(TastyMimaProblems(_))(_.problems)
   val comparisonAttributes =
