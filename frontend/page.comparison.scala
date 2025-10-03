@@ -13,6 +13,7 @@ def renderComparisonPage(
   val sig = signal.flatMapSwitch(cid => Api.client.stream(_.getComparison(cid)))
   fragmentLayout(
     div(
+      cls := "comparison-page",
       fragmentStaticScalaSnippets(
         beforeCodeVar.set(_),
         afterCodeVar.set(_),

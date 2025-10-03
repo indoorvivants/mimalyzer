@@ -108,12 +108,9 @@ def renderMainPage(
     ),
     fragmentScalaPicker(scalaVersion),
     submitButton,
-    pre(
-      cls := "code-preview-container",
-      fragmentMimaErrors(
-        readyState.signal.changes.collectSome.flatMapSwitch(id =>
-          Api.client.stream(_.getComparison(id))
-        )
+    fragmentMimaErrors(
+      readyState.signal.changes.collectSome.flatMapSwitch(id =>
+        Api.client.stream(_.getComparison(id))
       )
     ),
     footerFragment,

@@ -74,15 +74,15 @@
 
 /* Static code snippets */
 .snippet-controls {
-    @apply flex flex-row gap-2;
+    @apply flex flex-row gap-4;
 }
 
 .snippet-version-display {
-    @apply text-xl font-bold m-2;
+    @apply text-xl font-bold;
 }
 
 .snippet-code-row {
-    @apply w-full flex lg:flex-row xl:flex-row sm:flex-col md:flex-col gap-4 m-2;
+    @apply w-full flex lg:flex-row xl:flex-row sm:flex-col md:flex-col gap-4;
 }
 
 
@@ -90,13 +90,10 @@
     @apply flex-none;
 }
 
-.snippet-code-title {
-    @apply text-xl;
-}
 
 /* Error list */
 .error-list {
-    @apply m-2 pl-4 text-sm;
+    @apply pl-4;
 }
 
 .error-list-item {
@@ -105,11 +102,11 @@
 }
 
 .msg-info {
-    @apply bg-emerald-300 border-2 border-emerald-800 p-2 m-2
+    @apply bg-emerald-300 border-2 border-emerald-800 p-2;
 }
 
 .msg-error {
-    @apply bg-rose-300 border-2 border-rose-800 p-2 m-2;
+    @apply bg-rose-300 border-2 border-rose-800 p-2;
 }
 
 p.error-details {
@@ -125,3 +122,19 @@ span.error-symbol {
 }
 
 p.error-message {}
+
+p.snippet-code-title {
+    @apply text-lg;
+}
+
+code.static-code-block {
+    @apply bg-white p-2 rounded-md border-2 border-slate-400;
+}
+
+.comparison-page {
+    @apply flex flex-col gap-6;
+}
+
+.error-container {
+    @apply flex flex-col gap-4;
+}

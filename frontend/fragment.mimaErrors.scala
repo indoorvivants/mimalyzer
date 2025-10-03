@@ -30,6 +30,7 @@ def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
         )
       else
         div(
+          cls := "error-container",
           gso.comparison.mimaProblems.map: mima =>
             message(
               MsgType.Error,
