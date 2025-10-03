@@ -37,7 +37,7 @@ def analyseFileCode(
 
     compiledOld <- IO(
       compiler.compile(
-        "old.scala",
+        "example.scala",
         oldScala.value,
         classDirOld.toNioPath.toAbsolutePath().toString()
       )
@@ -67,7 +67,7 @@ def analyseFileCode(
 
     compiledNew <- IO(
       compiler.compile(
-        "new.scala",
+        "example.scala",
         newScala.value,
         classDirNew.toNioPath.toAbsolutePath().toString()
       )

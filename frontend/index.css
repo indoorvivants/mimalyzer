@@ -29,7 +29,7 @@
 }
 
 .code-input-column {
-    @apply flex w-6/12 flex-col gap-2 grow-0 w-6/12 w-full;
+    @apply flex w-6/12 flex-col gap-2 grow-0;
 }
 
 .code-input-header {
@@ -87,7 +87,7 @@
 
 
 .snippet-code-column {
-    @apply flex-none;
+    @apply flex-1 w-6/12;
 }
 
 
