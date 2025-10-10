@@ -3,7 +3,7 @@
 //> using options -Wunused:all -experimental
 //> using files ../compiler-interface/ ../shared/generated/
 
-//> using dependency ch.epfl.scala::tasty-mima::1.4.0
+//> using dependency ch.epfl.scala::tasty-mima::1.4.1
 //> using dependency com.disneystreaming.smithy4s::smithy4s-core::0.18.42
 //> using dependency com.disneystreaming.smithy4s::smithy4s-http4s::0.18.42
 //> using dependency com.indoorvivants::decline-derive::0.3.1
