@@ -118,7 +118,8 @@ class Store private (db: Resource[IO, Session[IO]]):
                 update compilation_results
                 set
                     worker_id = $uuid,
-                    worker_checked_in_at = ${timestamptz}
+                    worker_checked_in_at = ${timestamptz},
+                    state = ${C.state}
                 where id in
                     (
                         select
@@ -130,7 +131,7 @@ class Store private (db: Resource[IO, Session[IO]]):
                     )
                 returning id
               """.stripMargin.query(uuid),
-              (workerId, inst, State.Added, limit),
+              (workerId, inst, State.Processing, State.Added, limit),
               limit.min(100)
             ).compile.toList
           )
@@ -153,16 +154,17 @@ class Store private (db: Resource[IO, Session[IO]]):
         sql"""
           update compilation_results
           set worker_id = ${uuid}, worker_checked_in_at = now(), state = ${C.state}
-          where id
-            in (select id from compilation_results where (now() - worker_checked_in_at > interval '$int4 seconds') and state NOT IN  (${C.state
-            .list(2)}) limit $int4)
+          where 
+            worker_id is not null AND
+            id in (select id from compilation_results where (now() - worker_checked_in_at > interval '$int4 seconds') and state NOT IN  (${C.state
+            .list(3)}) limit $int4)
           returning id
           """.query(uuid),
         (
           workerId,
           State.Processing,
           staleness.toSeconds.toInt,
-          List(State.Completed, State.Failed),
+          List(State.Completed, State.Failed, State.Added),
           limit
         ),
         limit
@@ -269,7 +271,11 @@ object C:
     base
       .imap[T](str => decode[T](str).right.get)(_.asJson.noSpacesSortKeys)
 
-  case class JsonProblem(msg: String, tag: Option[String], symbol: Option[String]) derives io.circe.Codec.AsObject:
+  case class JsonProblem(
+      msg: String,
+      tag: Option[String],
+      symbol: Option[String]
+  ) derives io.circe.Codec.AsObject:
     def toProblem = Problem(msg, tag, symbol)
 
   val comparisonId = imap(ComparisonId)(uuid)
@@ -278,7 +284,9 @@ object C:
   val processingStep = enumap(ProcessingStep)(text)
   val jsonProblemList = jsonLike[List[JsonProblem]](text)
   val problemList =
-    jsonProblemList.imap(_.map(_.toProblem))(_.map(p => JsonProblem(p.message, p.tag, p.symbol)))
+    jsonProblemList.imap(_.map(_.toProblem))(
+      _.map(p => JsonProblem(p.message, p.tag, p.symbol))
+    )
   val mimaProblems = problemList.imap(MimaProblems(_))(_.problems)
   val tastyMimaProblems = problemList.imap(TastyMimaProblems(_))(_.problems)
   val comparisonAttributes =
