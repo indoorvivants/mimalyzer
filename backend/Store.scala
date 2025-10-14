@@ -16,6 +16,7 @@ import skunk.codec.all.*
 import smithy4s.Newtype
 import mimalyzer.protocol.CodeLabel.AFTER
 import mimalyzer.protocol.CodeLabel.BEFORE
+import concurrent.duration.*
 
 class Store private (db: Resource[IO, Session[IO]]):
   def schedule(attributes: ComparisonAttributes): IO[ComparisonId] =
@@ -137,6 +138,7 @@ class Store private (db: Resource[IO, Session[IO]]):
           )
         )
       }
+      .timeout(2.seconds)
 
   end createLeases
 
@@ -169,7 +171,7 @@ class Store private (db: Resource[IO, Session[IO]]):
         ),
         limit
       ).compile.toList
-    )
+    ).timeout(2.seconds)
 
   def removeLease(id: WorkerId, job: JobId): IO[Unit] =
     db.use(

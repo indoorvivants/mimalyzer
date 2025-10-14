@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 import concurrent.duration.*
 
 enum CLI derives CommandApplication:
-  case Server(port: Option[Int], host: Option[String])
+  case Server(port: Option[Int], host: Option[String], workers: Option[Int])
   case Worker(port: Option[Int], host: Option[String])
 
 object Mimalyzer extends IOApp:
@@ -26,11 +26,12 @@ object Mimalyzer extends IOApp:
     cli match
       case cli: CLI.Server =>
         val (port, host) = defaults(cli.port, cli.host)
+        val workers = cli.workers.getOrElse(1)
 
         val server =
           for
             store <- Store.open()
-            worker <- setupWorker(store)
+            workers <- setupWorker(store).parReplicateA(workers)
             routes <- routesResource(
               TestServiceImpl(store)
             )
@@ -43,7 +44,7 @@ object Mimalyzer extends IOApp:
               .build
               .map(_.baseUri)
               .evalTap(uri => Log.info(s"Server running on $uri"))
-              .parProductL(worker.process)
+              .parProductL(workers.parTraverse(_.process))
           yield server
 
         server.useForever

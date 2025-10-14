@@ -34,6 +34,9 @@ class Worker(
                   .evalTap(jobId =>
                     Log.info(s"Worker $id is leasing job $jobId")
                   )
+                  .onError(err =>
+                    fs2.Stream.eval(Log.error("Failed to lease a job", err))
+                  )
 
                 val stolen = fs2.Stream
                   .evalSeq(

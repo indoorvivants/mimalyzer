@@ -92,7 +92,7 @@ run-backend: $(bridges) $(library_classpaths) $(compiler_classpaths)
 		export SCALA_212_COMPILER_CLASSPATH_FILE="../.dev/scala212.compiler.classpath" && \
 		export SCALA_212_CLASSPATH_FILE="../.dev/scala212.classpath" && \
 		export SCALA_212_BRIDGE="../.dev/scala212bridge.jar" && \
-		scala-cli --power run -w *.scala --restart -- server --port 9977
+		scala-cli --power run -w *.scala --restart -- server --port 9977 --workers 2
 
 
 run-worker: $(bridges) $(library_classpaths) $(compiler_classpaths)
