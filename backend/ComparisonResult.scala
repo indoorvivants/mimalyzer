@@ -8,3 +8,4 @@ enum ComparisonResult:
       mimaProblems: MimaProblems,
       tastyMimaProblems: TastyMimaProblems
   )
+  case Failure(msg: String)

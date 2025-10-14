@@ -111,11 +111,21 @@ class Store private (db: Resource[IO, Session[IO]]):
       .eval(
         IO.realTimeInstant.map(OffsetDateTime.ofInstant(_, ZoneId.of("UTC")))
       )
+      // .evalTap: _ =>
+      //   db.use(
+      //     _.option(
+      //       sql"""
+      //         select
+      //             id
+      //         from compilation_results
+      //         where state = ${C.state} and worker_id is null
+      //         order by created_at
+      //         limit $int4""".query(uuid),
+      //       (State.Added, limit)
+      //     )
+      //   ).flatTap(IO.println(_))
       .flatMap { inst =>
-        fs2.Stream.evalSeq(
-          db.use(
-            _.stream(
-              sql"""
+        val newValue = sql"""
                 update compilation_results
                 set
                     worker_id = $uuid,
@@ -129,17 +139,20 @@ class Store private (db: Resource[IO, Session[IO]]):
                         where state = ${C.state} and worker_id is null
                         order by created_at
                         limit $int4
-                    )
+                    ) and worker_id is null
                 returning id
-              """.stripMargin.query(uuid),
+              """.stripMargin.query(uuid)
+
+        fs2.Stream.evalSeq(
+          db.use(
+            _.stream(
+              newValue,
               (workerId, inst, State.Processing, State.Added, limit),
-              limit.min(100)
+              limit
             ).compile.toList
           )
         )
       }
-      .timeout(2.seconds)
-
   end createLeases
 
   val instant =
@@ -151,27 +164,47 @@ class Store private (db: Resource[IO, Session[IO]]):
       limit: Int,
       staleness: FiniteDuration
   ): IO[List[UUID]] =
-    db.use(
-      _.stream(
-        sql"""
-          update compilation_results
-          set worker_id = ${uuid}, worker_checked_in_at = now(), state = ${C.state}
-          where 
-            worker_id is not null AND
-            id in (select id from compilation_results where (now() - worker_checked_in_at > interval '$int4 seconds') and state NOT IN  (${C.state
-            .list(3)}) limit $int4)
-          returning id
+    db.use: db =>
+      val candidates =
+        db.stream(
+          sql"""
+              select id from compilation_results 
+              where 
+                worker_id is not null and 
+                worker_checked_in_at is not null and 
+                (now() - worker_checked_in_at > interval '$int4 seconds') and 
+                state NOT IN  (${C.state.list(2)}) limit $int4
           """.query(uuid),
-        (
-          workerId,
-          State.Processing,
-          staleness.toSeconds.toInt,
-          List(State.Completed, State.Failed, State.Added),
+          (
+            staleness.toSeconds.toInt,
+            List(State.Completed, State.Failed),
+            limit
+          ),
           limit
-        ),
-        limit
-      ).compile.toList
-    ).timeout(2.seconds)
+        ).compile
+          .toList
+
+      candidates.flatMap: jobIds =>
+        if jobIds.isEmpty then IO.pure(Nil)
+        else
+          db.stream(
+            sql"""
+            update compilation_results
+            set worker_id = ${uuid}, worker_checked_in_at = now(), state = ${C.state}
+            where 
+              id in (${uuid.list(jobIds.size)}) AND
+              (now() - worker_checked_in_at > interval '$int4 seconds')
+            returning id
+            """.query(uuid),
+            (
+              workerId,
+              State.Processing,
+              jobIds,
+              staleness.toSeconds.toInt
+            ),
+            limit
+          ).compile
+            .toList
 
   def removeLease(id: WorkerId, job: JobId): IO[Unit] =
     db.use(
@@ -184,33 +217,53 @@ class Store private (db: Resource[IO, Session[IO]]):
         (id, job)
       )
     ).void
+      .timeout(2.seconds)
 
-  def getNoncompleteSpec(id: JobId): IO[Option[CompilationJob]] =
+  def getNoncompleteSpec(
+      id: JobId,
+      workerId: WorkerId
+  ): IO[Option[CompilationJob]] =
     db.use(
       _.option(
         sql"""
         select job_id, cr.id, j.code_before, j.code_after, cr.scala_version_tag
         from compilation_results cr
         inner join jobs j on j.id = cr.job_id
-        where cr.id = ${uuid} and cr.state != ${C.state} and cr.state != ${C.state}
+        where cr.id = ${uuid} and cr.state != ${C.state} and cr.state != ${C.state} and cr.worker_id = ${uuid}
         """.query(C.compilationJob),
-        (id, State.Completed, State.Failed)
+        (id, State.Completed, State.Failed, workerId)
       )
     )
 
-  def setProcessingStep(id: JobId, step: ProcessingStep): IO[Unit] =
-    db.use(
-      _.execute(
-        sql"""update compilation_results set
+  def setProcessingStep(
+      wid: WorkerId,
+      id: JobId,
+      step: ProcessingStep
+  ): IO[Unit] =
+    Log.info(s"Worker $wid advancing job $id to step $step") *>
+      db.use(
+        _.execute(
+          sql"""update compilation_results set
             state=${C.state},
             processing_step = ${C.processingStep},
             worker_checked_in_at = now()
-            where id = ${C.jobId}""".command
-      )(State.Processing, step, id)
-    ).void
+            where id = ${C.jobId} and worker_id = ${uuid}""".command
+        )(State.Processing, step, wid, id)
+      ).void
 
   def complete(id: JobId, result: ComparisonResult): IO[Unit] =
     result match
+      case ComparisonResult.Failure(msg) =>
+        db.use(
+          _.execute(sql"""
+          update compilation_results
+          set state = ${C.state}, after_compilation_errors = $text
+          where id = ${uuid}
+          """.command)(
+            (State.Failed, msg, id)
+          )
+        ).void
+
       case ComparisonResult.CompilationFailed(which, errorOut) =>
         val errorField = which match
           case AFTER  => sql"after_compilation_errors"

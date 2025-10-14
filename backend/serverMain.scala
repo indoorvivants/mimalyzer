@@ -116,12 +116,13 @@ def setupWorker(store: Store) =
 
     compilers = Compilers(scala213, scala212, scala3)
     workerConfig <- WorkerConfig.fromEnv.toResource
+    id = UUID.randomUUID()
     worker = Worker(
-      UUID.randomUUID(),
+      id,
       store,
       workerConfig,
       compilers,
       singleThreadEC,
-      store.setProcessingStep
+      store.setProcessingStep(id, _, _)
     )
   yield worker

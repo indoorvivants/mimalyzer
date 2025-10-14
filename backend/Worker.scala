@@ -27,6 +27,9 @@ class Worker(
           fs2.Stream
             .repeatEval(q.tryTake)
             .meteredStartImmediately(config.workerPulse)
+            .evalTap:
+              case None      => Log.info(s"Worker $id is going to steal shit")
+              case Some(jid) => Log.info(s"Worker $id is going lease job $jid")
             .flatMap {
               case None =>
                 val unprocessed = store
@@ -78,7 +81,7 @@ class Worker(
       }
 
   def handle(jobId: JobId, progress: (JobId, ProcessingStep) => IO[Unit]) =
-    store.getNoncompleteSpec(jobId).flatMap {
+    store.getNoncompleteSpec(jobId, id).flatMap {
       case None =>
         Log.error(
           s"Job $jobId was scheduled but is not found in the database in incomplete state"

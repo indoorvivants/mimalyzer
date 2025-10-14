@@ -100,13 +100,22 @@ def analyseFileCode(
     classpathAfter = compiledNew.classpath().map(Paths.get(_)).toList
 
     mima = new MiMaLib(classpathBefore.map(_.toFile))
-    problems <- IO.blocking(
-      mima.collectProblems(
-        entryBefore.toFile(),
-        entryAfter.toFile(),
-        Nil
+    problems <- IO
+      .interruptible(
+        mima.collectProblems(
+          entryBefore.toFile(),
+          entryAfter.toFile(),
+          Nil
+        )
       )
-    )
+      .timeoutTo(
+        5.seconds,
+        IO.raiseError(
+          EarlyReturn(
+            ComparisonResult.Failure("MiMa call timed out after 5 seconds")
+          )
+        )
+      )
 
     _ <- progress(ProcessingStep.MIMA_FINISHED)
 
@@ -114,7 +123,7 @@ def analyseFileCode(
     oldClasspath = javaLib ::: entryBefore +: classpathBefore
     newClasspath = javaLib ::: entryAfter +: classpathAfter
 
-    tastyProblems <- IO.blocking(
+    tastyProblems <- IO.interruptible(
       Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
         tastymima.analyze(
           oldClasspath = oldClasspath,
@@ -130,11 +139,23 @@ def analyseFileCode(
     _ <- files.deleteRecursively(classDirNew)
   yield ComparisonResult.Success(
     mimaProblems = MimaProblems(
-      problems.map(p => Problem(p.description("new"), tag = Some(p.getClass.getSimpleName), symbol = p.matchName))
+      problems.map(p =>
+        Problem(
+          p.description("new"),
+          tag = Some(p.getClass.getSimpleName),
+          symbol = p.matchName
+        )
+      )
     ),
     tastyMimaProblems = TastyMimaProblems(
       tastyProblems.toList.flatten
-        .map(p => Problem(p.getDescription(), tag = Some(p.kind.name()), symbol = Some(p.getPathString())))
+        .map(p =>
+          Problem(
+            p.getDescription(),
+            tag = Some(p.kind.name()),
+            symbol = Some(p.getPathString())
+          )
+        )
     )
   )
   end comp
