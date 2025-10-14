@@ -25,7 +25,7 @@ class Worker(
       Queue.bounded[IO, JobId](config.workerQueueSize).toResource.flatMap { q =>
         val normalProcess =
           fs2.Stream
-            .repeatEval(IO.cede *> q.tryTake)
+            .repeatEval(q.tryTake)
             .meteredStartImmediately(config.workerPulse)
             .flatMap {
               case None =>
