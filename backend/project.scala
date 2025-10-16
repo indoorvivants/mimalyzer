@@ -4,9 +4,9 @@
 //> using files ../compiler-interface/ ../shared/generated/
 
 //> using dependency ch.epfl.scala::tasty-mima::1.4.1
-//> using dependency com.disneystreaming.smithy4s::smithy4s-core::0.18.42
-//> using dependency com.disneystreaming.smithy4s::smithy4s-http4s::0.18.42
-//> using dependency com.indoorvivants::decline-derive::0.3.1
+//> using dependency com.disneystreaming.smithy4s::smithy4s-core::0.18.43
+//> using dependency com.disneystreaming.smithy4s::smithy4s-http4s::0.18.43
+//> using dependency com.indoorvivants::decline-derive::0.3.2
 //> using dependency com.outr::scribe-cats::3.17.0
 //> using dependency com.typesafe::mima-core:1.1.4
 //> using dependency dev.rolang::dumbo::0.6.0
