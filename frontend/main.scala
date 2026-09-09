@@ -33,7 +33,7 @@ type JobId = UUID
       key = "mimalyzer-scala-version",
       syncOwner = Some(unsafeWindowOwner)
     )
-    .text(ScalaVersion.SCALA_213.value)
+    .text(ScalaVersion.SCALA_213.stringValue)
 
   val app = MimalyzerFrontend(oldScalaCode, newScalaCode, scalaVersion)
 
