@@ -19,7 +19,7 @@ def exponentialFetch[A](
     req: () => Promise[A],
     shouldRetry: A => Boolean = {
       (_: Any) match
-        case err: smithy4s.http.UnknownErrorResponse =>
+        case err: smithy4s.http.RawErrorResponse =>
           err.code == 502 || err.code == 504 || err.code == 503
         case other =>
           dom.console.log(s"Not retrying $other")

@@ -4,6 +4,7 @@ import skunk.*, implicits.*
 import cats.effect.*, std.*
 import cats.syntax.all.*
 import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.metrics.Meter
 import dumbo.Dumbo
 import dumbo.ConnectionConfig
 
@@ -314,7 +315,7 @@ object C:
       values
         .get(raw)
         .toRight(s"Unknown value $raw – acceptable values are: $concat")
-    )(_.value)
+    )(_.stringValue)
   end enumap
 
   import io.circe.parser.decode
@@ -371,6 +372,7 @@ object Store:
           PgCredentials.defaults(env.toMap)
 
     given Tracer[IO] = Tracer.Implicits.noop[IO]
+    given Meter[IO] = Meter.Implicits.noop[IO]
 
     creds
       .flatTap(cr => Log.info(s"Credentials: $cr"))
@@ -381,7 +383,7 @@ object Store:
       )
   end open
 
-  def migrate(postgres: PgCredentials)(using Tracer[IO]) =
+  def migrate(postgres: PgCredentials)(using Tracer[IO], Meter[IO]) =
 
     given dumbo.logging.Logger[IO] =
       case (dumbo.logging.LogLevel.Info, message) => Log.info(message)
@@ -406,7 +408,8 @@ object Store:
   end migrate
 
   def open(postgres: PgCredentials, skunkConfig: SkunkConfig)(using
-      Tracer[IO]
+      Tracer[IO],
+      Meter[IO]
   ): Resource[IO, Store] =
     Session
       .pooled[IO](
