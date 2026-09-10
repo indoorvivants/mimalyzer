@@ -4,6 +4,7 @@ import skunk.*, implicits.*
 import cats.effect.*, std.*
 import cats.syntax.all.*
 import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.metrics.Meter
 import dumbo.Dumbo
 import dumbo.ConnectionConfig
 
@@ -206,7 +207,19 @@ class Store private (db: Resource[IO, Session[IO]]):
           ).compile
             .toList
 
-  def removeLease(id: WorkerId, job: JobId): IO[Unit] =
+  def increaseFailures(job: JobId): IO[Unit] = 
+    db.use(
+      _.execute(
+        sql"""
+        update compilation_results
+        set num_failures = num_failures + 1
+        where id = ${uuid} 
+    """.command,
+        (job)
+      )
+    ).void
+
+  def removeLease(workerId: WorkerId, job: JobId): IO[Unit] =
     db.use(
       _.execute(
         sql"""
@@ -214,7 +227,7 @@ class Store private (db: Resource[IO, Session[IO]]):
         set worker_id = null, worker_checked_in_at = null
         where id = ${uuid} and worker_id = ${uuid}
     """.command,
-        (id, job)
+        (job, workerId)
       )
     ).void
       .timeout(2.seconds)
@@ -248,7 +261,7 @@ class Store private (db: Resource[IO, Session[IO]]):
             processing_step = ${C.processingStep},
             worker_checked_in_at = now()
             where id = ${C.jobId} and worker_id = ${uuid}""".command
-        )(State.Processing, step, wid, id)
+        )(State.Processing, step, id, wid)
       ).void
 
   def complete(id: JobId, result: ComparisonResult): IO[Unit] =
@@ -314,7 +327,7 @@ object C:
       values
         .get(raw)
         .toRight(s"Unknown value $raw – acceptable values are: $concat")
-    )(_.value)
+    )(_.stringValue)
   end enumap
 
   import io.circe.parser.decode
@@ -335,7 +348,7 @@ object C:
 
   val comparisonId = imap(ComparisonId)(uuid)
   val scalaCode = imap(ScalaCode)(text)
-  val scalaVersion = enumap(ScalaVersion)(varchar(10))
+  val scalaVersion = imap(ScalaVersion)(varchar(10))
   val processingStep = enumap(ProcessingStep)(text)
   val jsonProblemList = jsonLike[List[JsonProblem]](text)
   val problemList =
@@ -371,6 +384,7 @@ object Store:
           PgCredentials.defaults(env.toMap)
 
     given Tracer[IO] = Tracer.Implicits.noop[IO]
+    given Meter[IO] = Meter.Implicits.noop[IO]
 
     creds
       .flatTap(cr => Log.info(s"Credentials: $cr"))
@@ -381,7 +395,7 @@ object Store:
       )
   end open
 
-  def migrate(postgres: PgCredentials)(using Tracer[IO]) =
+  def migrate(postgres: PgCredentials)(using Tracer[IO], Meter[IO]) =
 
     given dumbo.logging.Logger[IO] =
       case (dumbo.logging.LogLevel.Info, message) => Log.info(message)
@@ -406,7 +420,8 @@ object Store:
   end migrate
 
   def open(postgres: PgCredentials, skunkConfig: SkunkConfig)(using
-      Tracer[IO]
+      Tracer[IO],
+      Meter[IO]
   ): Resource[IO, Store] =
     Session
       .pooled[IO](

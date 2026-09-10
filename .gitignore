@@ -33,3 +33,6 @@ scalajs-frontend.js
 db.json
 *.map
 .dev
+target
+.vscode
+metals.sbt

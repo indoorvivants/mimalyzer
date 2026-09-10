@@ -65,6 +65,7 @@ class Worker(
                     handle(jobId, progress).handleErrorWith(exc =>
                       Log.error(s"Failed during handling of job $jobId", exc)
                     ) *>
+                    store.increaseFailures(jobId) *>
                     store
                       .removeLease(id, jobId)
                       .handleErrorWith(exc =>
@@ -88,17 +89,18 @@ class Worker(
         )
       case Some(spec) =>
         import ScalaVersion.*
-        progress(jobId, ProcessingStep.PICKED_UP) *>
-          analyseFileCode(
-            spec.codeBefore,
-            spec.codeAfter,
-            spec.scalaVersion match
-              case SCALA_213   => compilers.scala213
-              case SCALA_212   => compilers.scala212
-              case SCALA_3_LTS => compilers.scala3,
-            singleThread,
-            spec.scalaVersion,
-            processingStep => progress(jobId, processingStep)
-          ).flatMap(store.complete(jobId, _))
+        IO.fromOption(compilers.mapping.get(spec.scalaVersion))(
+          InvalidScalaVersion()
+        ).flatMap { compiler =>
+          progress(jobId, ProcessingStep.PICKED_UP) *>
+            analyseFileCode(
+              spec.codeBefore,
+              spec.codeAfter,
+              compiler,
+              singleThread,
+              spec.scalaVersion,
+              processingStep => progress(jobId, processingStep)
+            ).flatMap(store.complete(jobId, _))
+        }
     }
 end Worker

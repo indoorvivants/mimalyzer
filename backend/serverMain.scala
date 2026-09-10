@@ -24,9 +24,10 @@ object Mimalyzer extends IOApp:
         val server =
           for
             store <- Store.open()
-            workers <- setupWorker(store).parReplicateA(cli.workers)
+            compilers <- bootstrapCompilers
+            workers <- setupWorker(store, compilers).parReplicateA(cli.workers)
             routes <- routesResource(
-              TestServiceImpl(store)
+              TestServiceImpl(store, compilers)
             )
             server <- EmberServerBuilder
               .default[IO]
@@ -49,7 +50,8 @@ object Mimalyzer extends IOApp:
         val process =
           for
             store <- Store.open()
-            worker <- setupWorker(store)
+            compilers <- bootstrapCompilers
+            worker <- setupWorker(store, compilers)
             routes = HttpApp[IO]:
               case GET -> Root / "health" =>
                 Ok("""{"status": "ok"}""").map(
@@ -79,18 +81,28 @@ object Mimalyzer extends IOApp:
   end run
 end Mimalyzer
 
+def bootstrapCompilers =
+  for
+    compilersInfo <- IO
+      .fromEither(
+        CompilersInfo.readFromResources.leftMap((addr, msg) =>
+          RuntimeException(
+            s"Failed to read compiler information at ${addr} with: [$msg]"
+          )
+        )
+      )
+      .toResource
+    compilers <- IO(Compilers.load(compilersInfo)).toResource
 
-def setupWorker(store: Store): Resource[IO, Worker] =
+  yield compilers
+
+def setupWorker(store: Store, compilers: Compilers): Resource[IO, Worker] =
   for
     env <- IO.envForIO.entries.map(_.toMap).toResource
-    scala213 <- IO(Scala213Compiler.load(env)).toResource
-    scala212 <- IO(Scala212Compiler.load(env)).toResource
-    scala3 <- IO(Scala3Compiler.load(env)).toResource
     singleThreadEC <- Resource
       .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
       .map(ExecutionContext.fromExecutorService)
 
-    compilers = Compilers(scala213, scala212, scala3)
     workerConfig <- WorkerConfig.fromEnv.toResource
     id = UUID.randomUUID()
     worker = Worker(
