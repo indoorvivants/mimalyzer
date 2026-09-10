@@ -65,6 +65,7 @@ class Worker(
                     handle(jobId, progress).handleErrorWith(exc =>
                       Log.error(s"Failed during handling of job $jobId", exc)
                     ) *>
+                    store.increaseFailures(jobId) *>
                     store
                       .removeLease(id, jobId)
                       .handleErrorWith(exc =>

@@ -207,7 +207,19 @@ class Store private (db: Resource[IO, Session[IO]]):
           ).compile
             .toList
 
-  def removeLease(id: WorkerId, job: JobId): IO[Unit] =
+  def increaseFailures(job: JobId): IO[Unit] = 
+    db.use(
+      _.execute(
+        sql"""
+        update compilation_results
+        set num_failures = num_failures + 1
+        where id = ${uuid} 
+    """.command,
+        (job)
+      )
+    ).void
+
+  def removeLease(workerId: WorkerId, job: JobId): IO[Unit] =
     db.use(
       _.execute(
         sql"""
@@ -215,7 +227,7 @@ class Store private (db: Resource[IO, Session[IO]]):
         set worker_id = null, worker_checked_in_at = null
         where id = ${uuid} and worker_id = ${uuid}
     """.command,
-        (id, job)
+        (job, workerId)
       )
     ).void
       .timeout(2.seconds)
