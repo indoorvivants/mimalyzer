@@ -14,7 +14,7 @@ def fragmentStaticScalaSnippets(
   div(
     child <-- gso.map: gso =>
       div(
-        cls := "flex flex-col gap-2",
+        cls := "snippet-block",
         div(
           cls := "snippet-controls",
           a(

@@ -1,140 +1,266 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+body {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgb(15 23 42);
+    margin: 0;
+}
+
+.page-background {
+    background-image: linear-gradient(to right, rgb(254 202 202), rgb(254 240 138));
+    min-height: 100vh;
+}
 
 .mark {
     background-color: rgba(255, 0, 0, 0.23);
 }
 
+.snippet-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 /* Scala picker styles */
 .scala-picker-container {
-    @apply flex flex-row gap-8 text-2xl place-content-center;
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    font-size: 1.875rem;
+    line-height: 1.1;
+    place-content: center;
 }
 
 .scala-version-option {
-    @apply flex flex-row gap-2 m-2 border-2 border-slate-500 p-4 rounded-md cursor-pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.125rem;
+    border: 2px solid rgb(100 116 139);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
 }
 
 .scala-version-selected {
-    @apply bg-rose-700 text-white border-2 border-rose-900;
+    background-color: rgb(190 18 60);
+    color: rgb(255 255 255);
+    border: 2px solid rgb(136 19 55);
 }
 
 /* Main page layout */
 .main-content-container {
-    @apply mx-auto w-10/12 bg-white/70 p-6 rounded-lg max-w-screen-xl flex flex-col gap-4;
+    margin-left: auto;
+    margin-right: auto;
+    width: 83.333333%;
+    background-color: rgb(255 255 255 / 0.7);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    max-width: 1280px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .code-input-row {
-    @apply w-full flex md:flex-row lg:flex-row xl:flex-row sm:flex-col gap-4;
+    width: 100%;
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .code-input-row {
+        flex-direction: row;
+    }
 }
 
 .code-input-column {
-    @apply flex sm:w-full w-6/12 flex-col gap-2 grow-0;
+    display: flex;
+    width: 50%;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 0;
+}
+
+@media (max-width: 639px) {
+    .code-input-column {
+        width: 100%;
+    }
 }
 
 .code-input-header {
-    @apply font-bold;
+    font-weight: 700;
 }
 
 .code-input-description {
-    /* @apply text-md; */
 }
 
 .code-textarea {
-    @apply w-full border-2 border-slate-400 p-2;
+    width: 100%;
+    border: 2px solid rgb(148 163 184);
+    padding: 0.5rem;
 }
 
 .submit-button {
-    @apply bg-sky-700 text-lg font-bold p-2 text-white;
+    background-color: rgb(2 132 199);
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    padding: 0.5rem;
+    color: rgb(255 255 255);
+    border: none;
+    cursor: pointer;
+}
+
+.submit-button:hover {
+    background-color: rgb(3 105 161);
 }
 
 .code-preview-container {
-    @apply whitespace-pre-line rounded-md p-4;
+    white-space: pre-line;
+    border-radius: 0.375rem;
+    padding: 1rem;
 }
 
 /* Links */
-.basic-link {
-    @apply text-indigo-600 hover:no-underline underline;
+.basic-link,
+.basic-link:visited {
+    color: rgb(79 70 229);
+    text-decoration: underline;
+}
+
+.basic-link:hover {
+    text-decoration: none;
 }
 
 /* Header */
 .main-title {
-    @apply text-6xl;
+    font-size: 3.75rem;
+    line-height: 1;
+}
+
+.main-title,
+.main-title:visited,
+.main-title a,
+.main-title a:visited {
+    color: inherit;
+    text-decoration: none;
 }
 
 .header-description {
-    /* @apply font-italic; */
-    @apply text-sm;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
 }
 
 /* Footer */
 .footer-container {
-    @apply text-sm;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
 }
 
 /* Static code snippets */
 .snippet-controls {
-    @apply flex flex-row gap-4;
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
 }
 
 .snippet-version-display {
-    @apply text-xl font-bold;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
 }
 
 .snippet-code-row {
-    @apply w-full flex lg:flex-row xl:flex-row sm:flex-col md:flex-col gap-4;
+    width: 100%;
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
 }
 
+@media (min-width: 1024px) {
+    .snippet-code-row {
+        flex-direction: row;
+    }
+}
 
 .snippet-code-column {
-    @apply flex-1 md:w-full sm:w-full w-6/12;
+    flex: 1 1 0%;
+    width: 50%;
 }
 
+@media (max-width: 767px) {
+    .snippet-code-column {
+        width: 100%;
+    }
+}
 
 /* Error list */
 .error-list {
-    @apply pl-4;
+    padding-left: 1rem;
 }
 
 .error-list-item {
-    @apply list-disc m-2;
-
+    list-style-type: disc;
+    margin: 0.5rem;
 }
 
 .msg-info {
-    @apply bg-emerald-300 border-2 border-emerald-800 p-2;
+    background-color: rgb(110 231 183);
+    border: 2px solid rgb(6 95 70);
+    padding: 0.5rem;
 }
 
 .msg-error {
-    @apply bg-rose-300 border-2 border-rose-800 p-2;
+    background-color: rgb(253 164 175);
+    border: 2px solid rgb(159 18 57);
+    padding: 0.5rem;
 }
 
 p.error-details {
-    @apply flex flex-row gap-2;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 
 span.error-tag {
-    @apply bg-yellow-200 p-1 rounded-md;
+    background-color: rgb(254 240 138);
+    padding: 0.25rem;
+    border-radius: 0.375rem;
 }
 
 span.error-symbol {
-    @apply bg-sky-200 p-1 rounded-md;
+    background-color: rgb(186 230 253);
+    padding: 0.25rem;
+    border-radius: 0.375rem;
 }
 
 p.error-message {}
 
 p.snippet-code-title {
-    @apply text-lg;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
 }
 
 code.static-code-block {
-    @apply bg-white p-2 rounded-md border-2 border-slate-400;
+    background-color: rgb(255 255 255);
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 2px solid rgb(148 163 184);
 }
 
 .comparison-page {
-    @apply flex flex-col gap-6;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .error-container {
-    @apply flex flex-col gap-4;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
