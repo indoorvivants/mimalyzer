@@ -88,14 +88,18 @@ class Worker(
         )
       case Some(spec) =>
         import ScalaVersion.*
-        progress(jobId, ProcessingStep.PICKED_UP) *>
-          analyseFileCode(
-            spec.codeBefore,
-            spec.codeAfter,
-            compilers.mapping.getOrElse(spec.scalaVersion, ???),
-            singleThread,
-            spec.scalaVersion,
-            processingStep => progress(jobId, processingStep)
-          ).flatMap(store.complete(jobId, _))
+        IO.fromOption(compilers.mapping.get(spec.scalaVersion))(
+          InvalidScalaVersion()
+        ).flatMap { compiler =>
+          progress(jobId, ProcessingStep.PICKED_UP) *>
+            analyseFileCode(
+              spec.codeBefore,
+              spec.codeAfter,
+              compiler,
+              singleThread,
+              spec.scalaVersion,
+              processingStep => progress(jobId, processingStep)
+            ).flatMap(store.complete(jobId, _))
+        }
     }
 end Worker

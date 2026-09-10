@@ -10,6 +10,7 @@ service MimaService {
     version: "1.0.0"
     operations: [
         Health
+        Info
         GetComparison
         CreateComparison
         GetStatus
@@ -23,6 +24,19 @@ operation Health {
         @required
         status: String
     }
+}
+
+@readonly
+@http(method: "GET", uri: "/api/info", code: 200)
+operation Info {
+    output := {
+        @required
+        scalaVersions: ScalaVersions
+    }
+}
+
+list ScalaVersions {
+    member: ScalaVersion
 }
 
 @readonly
@@ -182,14 +196,15 @@ string ComparisonId
 
 string ScalaCode
 
-enum ScalaVersion {
-    SCALA_212 = "2.12"
-    SCALA_213 = "2.13"
-    SCALA_3_3_LTS = "3.3 LTS"
-    SCALA_3_9_LTS = "3.9 LTS"
-    SCALA_3_NEXT = "3.10 Next"
-}
+string ScalaVersion
 
+// enum ScalaVersion {
+//   SCALA_212 = "2.12"
+//   SCALA_213 = "2.13"
+//   SCALA_3_3_LTS = "3.3 LTS"
+//   SCALA_3_9_LTS = "3.9 LTS"
+//   SCALA_3_NEXT = "3.10 Next" }
+//
 enum ProcessingStep {
     PICKED_UP = "picked-up"
     CODE_BEFORE_COMPILED = "code-before-compiled"

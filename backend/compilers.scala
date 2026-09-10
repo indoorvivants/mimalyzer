@@ -33,14 +33,7 @@ object Compilers:
   def load(infos: CompilersInfo): Compilers =
     Compilers(
       infos.compilers.map { info =>
-        val sv =
-          if info.scala.startsWith("2.12") then ScalaVersion.SCALA_212
-          else if info.scala.startsWith("2.13") then ScalaVersion.SCALA_213
-          else if info.scala.startsWith("3.3") then ScalaVersion.SCALA_3_3_LTS
-          else if info.scala.startsWith("3.9") then ScalaVersion.SCALA_3_9_LTS
-          else ScalaVersion.SCALA_3_NEXT
-
-        sv -> loadFromInfo(info)
+        ScalaVersion(info.scala) -> loadFromInfo(info)
       }.toMap
     )
 end Compilers

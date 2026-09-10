@@ -43,7 +43,7 @@ def renderMainPage(
         ComparisonAttributes(
           beforeScalaCode = ScalaCode(old),
           afterScalaCode = ScalaCode(nw),
-          scalaVersion = ScalaVersion.values.find(_.stringValue == sv).get
+          scalaVersion = ScalaVersion(sv)
         )
 
       given Stability = Stability()

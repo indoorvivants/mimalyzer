@@ -249,7 +249,7 @@ class Store private (db: Resource[IO, Session[IO]]):
             processing_step = ${C.processingStep},
             worker_checked_in_at = now()
             where id = ${C.jobId} and worker_id = ${uuid}""".command
-        )(State.Processing, step, wid, id)
+        )(State.Processing, step, id, wid)
       ).void
 
   def complete(id: JobId, result: ComparisonResult): IO[Unit] =
@@ -336,7 +336,7 @@ object C:
 
   val comparisonId = imap(ComparisonId)(uuid)
   val scalaCode = imap(ScalaCode)(text)
-  val scalaVersion = enumap(ScalaVersion)(varchar(10))
+  val scalaVersion = imap(ScalaVersion)(varchar(10))
   val processingStep = enumap(ProcessingStep)(text)
   val jsonProblemList = jsonLike[List[JsonProblem]](text)
   val problemList =

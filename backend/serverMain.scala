@@ -24,9 +24,10 @@ object Mimalyzer extends IOApp:
         val server =
           for
             store <- Store.open()
-            workers <- setupWorker(store).parReplicateA(cli.workers)
+            compilers <- bootstrapCompilers
+            workers <- setupWorker(store, compilers).parReplicateA(cli.workers)
             routes <- routesResource(
-              TestServiceImpl(store)
+              TestServiceImpl(store, compilers)
             )
             server <- EmberServerBuilder
               .default[IO]
@@ -49,7 +50,8 @@ object Mimalyzer extends IOApp:
         val process =
           for
             store <- Store.open()
-            worker <- setupWorker(store)
+            compilers <- bootstrapCompilers
+            worker <- setupWorker(store, compilers)
             routes = HttpApp[IO]:
               case GET -> Root / "health" =>
                 Ok("""{"status": "ok"}""").map(
@@ -79,9 +81,8 @@ object Mimalyzer extends IOApp:
   end run
 end Mimalyzer
 
-def setupWorker(store: Store): Resource[IO, Worker] =
+def bootstrapCompilers =
   for
-    env <- IO.envForIO.entries.map(_.toMap).toResource
     compilersInfo <- IO
       .fromEither(
         CompilersInfo.readFromResources.leftMap((addr, msg) =>
@@ -92,6 +93,12 @@ def setupWorker(store: Store): Resource[IO, Worker] =
       )
       .toResource
     compilers <- IO(Compilers.load(compilersInfo)).toResource
+
+  yield compilers
+
+def setupWorker(store: Store, compilers: Compilers): Resource[IO, Worker] =
+  for
+    env <- IO.envForIO.entries.map(_.toMap).toResource
     singleThreadEC <- Resource
       .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
       .map(ExecutionContext.fromExecutorService)
