@@ -22,11 +22,14 @@ enum Status:
 case class State(comparison: Comparison, status: Status)
 
 class TestServiceImpl(
-    store: Store
+    store: Store,
+    compilers: Compilers
 ) extends MimaService[IO]:
   val randomID = UUIDGen[IO].randomUUID.map(ComparisonId(_))
 
   override def health() = IO.pure(HealthOutput(status = "ok"))
+
+  override def info() = IO.pure(InfoOutput(scalaVersions = sortScalaVersions(compilers.mapping.keySet.toList)))
 
   private def checkCode(code: ScalaCode, label: CodeLabel) =
     val MAX_SIZE = 2048

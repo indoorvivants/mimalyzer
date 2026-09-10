@@ -19,6 +19,7 @@ def fragmentStatusPoller(
         message(MsgType.Info, "Job in queue, waiting to be picked up...")
       case State.Polling(_, Some(ComparisonStatus.ProcessingCase(p))) =>
         val ahead = p.remaining.fold("")(s => s"$s remaining")
+        println("Step: " + p.step.toString)
         val step = p.step.map: p =>
           p match
             case PICKED_UP            => "picked up the job"
@@ -59,22 +60,3 @@ def fragmentStatusPoller(
       case State.None => emptyNode
     }
 
-def fragmentScalaPicker(scalaVersion: Var[String]) = div(
-  cls := "scala-picker-container",
-  ScalaVersion.values.map: sv =>
-    p(
-      cls := "scala-version-option",
-      cls("scala-version-selected") <-- scalaVersion.signal.map(
-        _ == sv.stringValue
-      ),
-      onClick.mapTo(sv.stringValue) --> scalaVersion,
-      input(
-        tpe := "radio",
-        nameAttr := "scala-version",
-        value := sv.stringValue,
-        checked <-- scalaVersion.signal.map(_ == sv.stringValue),
-        onChange.mapToValue --> scalaVersion
-      ),
-      p("Scala ", sv.stringValue)
-    )
-)

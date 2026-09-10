@@ -1,6 +1,13 @@
 val Scala = "3.9.0"
 val CompilerVersions = Seq("2.12.21", "2.13.18", "3.3.8", "3.9.0")
 
+lazy val root = project
+  .in(file("."))
+  .aggregate(compilerInterface)
+  .aggregate(compilers.projectRefs*)
+  .aggregate(frontend)
+  .aggregate(backend)
+
 lazy val compilerInterface =
   project
     .in(file("compiler-interface"))
@@ -14,6 +21,7 @@ lazy val backend = project
     scalaVersion := Scala,
     libraryDependencies ++= Seq(
       "ch.epfl.scala" %% "tasty-mima" % "1.4.1",
+      "ch.epfl.scala" %% "tasty-query" % "1.9.0",
       "com.disneystreaming.smithy4s" %% "smithy4s-core" % "0.19.11",
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % "0.19.11",
       "com.indoorvivants" %% "decline-derive" % "0.3.6",
@@ -49,6 +57,7 @@ lazy val backend = project
       |scala = "${info.scala}"
       |bridgeClasspath = ${tomlify(info.bridgeClasspath)}
       |compilerClasspath = ${tomlify(info.compilerClasspath)}
+      |libraryClasspath = ${tomlify(info.libraryClasspath)}
       """
           }
           .mkString("\n\n")
@@ -115,7 +124,7 @@ lazy val compilers = projectMatrix
       else Seq.empty
     },
 
-    compilerClasspath := {
+    compilerInfo := {
 
       def getJars(mid: ModuleID) =
 
@@ -136,29 +145,33 @@ lazy val compilers = projectMatrix
           .fold(uw => throw uw.resolveException, identity)
       end getJars
 
-      val moduleID =
+      val compilerModuleID =
         if scalaVersion.value.startsWith("3.") then
           "org.scala-lang" % "scala3-compiler_3" % scalaVersion.value
         else "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
-      getJars(moduleID).map(_.toString)
-    },
-    compilerInfo := (
-      scala = scalaVersion.value,
-      bridgeClasspath = (Compile / fullClasspath).value.toVector
-        .map(_.data)
-        .map(hv => fileConverter.value.toPath(hv).toString),
-      compilerClasspath = compilerClasspath.value
-    )
-  )
+      val libraryModuleID =
+        if scalaVersion.value.startsWith("3.") then
+          "org.scala-lang" % "scala3-library_3" % scalaVersion.value
+        else "org.scala-lang" % "scala-library" % scalaVersion.value
 
-val compilerClasspath = taskKey[Vector[String]]("")
+      (
+        scala = scalaVersion.value,
+        bridgeClasspath = (Compile / fullClasspath).value.toVector
+          .map(_.data)
+          .map(hv => fileConverter.value.toPath(hv).toString),
+        compilerClasspath = getJars(compilerModuleID).map(_.toString),
+        libraryClasspath = getJars(libraryModuleID).map(_.toString)
+      )
+    }
+  )
 
 @transient
 val compilerInfo = taskKey[
   (
       scala: String,
       bridgeClasspath: Vector[String],
-      compilerClasspath: Vector[String]
+      compilerClasspath: Vector[String],
+      libraryClasspath: Vector[String]
   )
 ]("")

@@ -22,7 +22,7 @@ def fragmentStaticScalaSnippets(
             href := "#",
             basicLink,
             onClick --> { _ =>
-              setScalaVersion(gso.comparison.attributes.scalaVersion.stringValue)
+              setScalaVersion(gso.comparison.attributes.scalaVersion.value)
               setCodeBefore(gso.comparison.attributes.beforeScalaCode.value)
               setCodeAfter(gso.comparison.attributes.afterScalaCode.value)
               redirectTo(Page.Main)
@@ -46,7 +46,7 @@ def fragmentStaticScalaSnippets(
         ),
         p(
           cls := "snippet-version-display",
-          "Scala " + gso.comparison.attributes.scalaVersion.stringValue
+          "Scala " + gso.comparison.attributes.scalaVersion.value
         ),
         div(
           cls := "snippet-code-row",
