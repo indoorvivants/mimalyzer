@@ -23,6 +23,7 @@ extension (c: CompilationError)
 
 end extension
 
+
 def analyseFileCode(
     oldScala: ScalaCode,
     newScala: ScalaCode,
@@ -124,7 +125,7 @@ def analyseFileCode(
     newClasspath = javaLib ::: entryAfter +: classpathAfter
 
     tastyProblems <- IO.interruptible(
-      Option.when(scalaVersion == ScalaVersion.SCALA_3_LTS):
+      Option.when(isScala3(scalaVersion)):
         tastymima.analyze(
           oldClasspath = oldClasspath,
           oldClasspathEntry = entryBefore,
@@ -186,3 +187,4 @@ lazy val javaLib: List[Path] =
         }
       List(Paths.get(rtJarFile))
 end javaLib
+

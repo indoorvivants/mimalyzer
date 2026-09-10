@@ -37,6 +37,8 @@ type JobId = UUID
 
   val app = MimalyzerFrontend(oldScalaCode, newScalaCode, scalaVersion)
 
+  println("hellos")
+
   renderOnDomContentLoaded(
     dom.document.getElementById("content"),
     div(child <-- app.signal)

@@ -185,7 +185,9 @@ string ScalaCode
 enum ScalaVersion {
     SCALA_212 = "2.12"
     SCALA_213 = "2.13"
-    SCALA_3_LTS = "3 LTS"
+    SCALA_3_3_LTS = "3.3 LTS"
+    SCALA_3_9_LTS = "3.9 LTS"
+    SCALA_3_NEXT = "3.10 Next"
 }
 
 enum ProcessingStep {
