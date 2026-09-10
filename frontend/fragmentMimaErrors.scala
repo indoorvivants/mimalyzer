@@ -12,48 +12,53 @@ import mimalyzer.protocol.isScala3
 def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
   div(
     child <-- gso.map: gso =>
-      val noProblems =
-        gso.comparison.mimaProblems.isEmpty && gso.comparison.tastyMimaProblems.isEmpty
-      if noProblems then
-        div(
+      // val noProblems =
+      //   gso.comparison.mimaProblems.isEmpty && gso.comparison.tastyMimaProblems.isEmpty
+      val mimaBlock =
+        if gso.comparison.mimaProblems.isEmpty then
           message(
             MsgType.Info,
             "Congratulations! This change is binary compatible"
-          ),
-          Option.when(
-            isScala3(gso.comparison.attributes.scalaVersion)
-          )(
+          )
+        else
+          div(
+            cls := "error-container",
+            gso.comparison.mimaProblems.map: mima =>
+              message(
+                MsgType.Error,
+                div(
+                  p(
+                    "This change is not binary compatible according to MiMa"
+                  ),
+                  renderProblems(mima.problems)
+                )
+              )
+          )
+
+      val tastyMimaBlock =
+        Option.when(isScala3(gso.comparison.attributes.scalaVersion))(
+          if gso.comparison.tastyMimaProblems.isEmpty then
             message(
               MsgType.Info,
               "Congratulations! This change is TASTy compatible"
             )
-          )
-        )
-      else
-        div(
-          cls := "error-container",
-          gso.comparison.mimaProblems.map: mima =>
-            message(
-              MsgType.Error,
-              div(
-                p(
-                  "This change is not binary compatible according to MiMa"
-                ),
-                renderProblems(mima.problems)
-              )
-            ),
-          gso.comparison.tastyMimaProblems.map: mima =>
-            message(
-              MsgType.Error,
-              div(
-                p(
-                  "This change is not TASTy compatible according to Tasty-MiMa"
-                ),
-                renderProblems(mima.problems)
-              )
+          else
+            div(
+              cls := "error-container",
+              gso.comparison.tastyMimaProblems.map: mima =>
+                message(
+                  MsgType.Error,
+                  div(
+                    p(
+                      "This change is not TASTy compatible according to Tasty-MiMa"
+                    ),
+                    renderProblems(mima.problems)
+                  )
+                )
             )
         )
-      end if
+
+      div(mimaBlock, tastyMimaBlock)
   )
 
 private def renderProblems(pl: List[Problem]) =
