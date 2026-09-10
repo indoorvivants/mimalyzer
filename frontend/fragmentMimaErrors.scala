@@ -7,6 +7,7 @@ import mimalyzer.frontend.MsgType
 import mimalyzer.frontend.message
 import mimalyzer.protocol.Problem
 import mimalyzer.protocol.ScalaVersion
+import mimalyzer.protocol.isScala3
 
 def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
   div(
@@ -20,7 +21,7 @@ def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
             "Congratulations! This change is binary compatible"
           ),
           Option.when(
-            gso.comparison.attributes.scalaVersion == ScalaVersion.SCALA_3_LTS
+            isScala3(gso.comparison.attributes.scalaVersion)
           )(
             message(
               MsgType.Info,

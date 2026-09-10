@@ -79,18 +79,23 @@ object Mimalyzer extends IOApp:
   end run
 end Mimalyzer
 
-
 def setupWorker(store: Store): Resource[IO, Worker] =
   for
     env <- IO.envForIO.entries.map(_.toMap).toResource
-    scala213 <- IO(Scala213Compiler.load(env)).toResource
-    scala212 <- IO(Scala212Compiler.load(env)).toResource
-    scala3 <- IO(Scala3Compiler.load(env)).toResource
+    compilersInfo <- IO
+      .fromEither(
+        CompilersInfo.readFromResources.leftMap((addr, msg) =>
+          RuntimeException(
+            s"Failed to read compiler information at ${addr} with: [$msg]"
+          )
+        )
+      )
+      .toResource
+    compilers <- IO(Compilers.load(compilersInfo)).toResource
     singleThreadEC <- Resource
       .make(IO(Executors.newSingleThreadExecutor))(es => IO(es.shutdown()))
       .map(ExecutionContext.fromExecutorService)
 
-    compilers = Compilers(scala213, scala212, scala3)
     workerConfig <- WorkerConfig.fromEnv.toResource
     id = UUID.randomUUID()
     worker = Worker(

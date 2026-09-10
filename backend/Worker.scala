@@ -92,10 +92,7 @@ class Worker(
           analyseFileCode(
             spec.codeBefore,
             spec.codeAfter,
-            spec.scalaVersion match
-              case SCALA_213   => compilers.scala213
-              case SCALA_212   => compilers.scala212
-              case SCALA_3_LTS => compilers.scala3,
+            compilers.mapping.getOrElse(spec.scalaVersion, ???),
             singleThread,
             spec.scalaVersion,
             processingStep => progress(jobId, processingStep)

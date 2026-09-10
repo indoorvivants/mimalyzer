@@ -8,6 +8,7 @@ lazy val compilerInterface =
 
 lazy val backend = project
   .in(file("backend"))
+  .enablePlugins(RevolverPlugin)
   .dependsOn(shared.jvm(Scala), compilerInterface)
   .settings(
     scalaVersion := Scala,
@@ -22,7 +23,8 @@ lazy val backend = project
       "io.circe" %% "circe-jawn" % "0.14.16",
       "io.circe" %% "circe-parser" % "0.14.16",
       "org.http4s" %% "http4s-ember-server" % "0.23.36",
-      "org.tpolecat" %% "skunk-core" % "1.0.0"
+      "org.tpolecat" %% "skunk-core" % "1.0.0",
+      "com.indoorvivants" %% "toml" % "0.3.0"
     ),
     (Compile / compile) := Def.uncached {
       (Compile / compile).dependsOn(Compile / copyResources).value
@@ -80,6 +82,12 @@ lazy val frontend = project
       "com.raquo" %% "waypoint" % "9.0.0",
       "tech.neander" %% "smithy4s-fetch" % "0.0.5"
     )
+  )
+  .enablePlugins(RevolverProcessPlugin)
+  .settings(
+    reStartCommand := Seq("npm", "run", "dev"),
+    reStart / baseDirectory := (ThisBuild / baseDirectory).value / "frontend",
+    scalaJSUseMainModuleInitializer := true
   )
 
 lazy val compilers = projectMatrix
