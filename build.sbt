@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+import java.nio.file.Files
 val Scala = "3.9.0"
 val CompilerVersions = Seq("2.12.21", "2.13.18", "3.3.8", "3.9.0")
 
@@ -19,6 +21,8 @@ lazy val backend = project
   .dependsOn(shared.jvm(Scala), compilerInterface)
   .settings(
     scalaVersion := Scala,
+    reStartArgs := Seq("server", "--port", "9977"),
+    reStart / baseDirectory := (ThisBuild / baseDirectory).value,
     libraryDependencies ++= Seq(
       "ch.epfl.scala" %% "tasty-mima" % "1.4.1",
       "ch.epfl.scala" %% "tasty-query" % "1.9.0",
@@ -47,18 +51,36 @@ lazy val backend = project
         val path =
           (Compile / managedResourceDirectories).value.head / "compilers.toml"
 
+        val libsBase = (ThisBuild / baseDirectory).value / ".libs"
+
+        IO.createDirectory(libsBase)
+
+        val mapping = collection.mutable.Map.empty[String, String]
+
+        def internify(raw: String) =
+          val basename = Paths.get(raw).getFileName().toString()
+          val target = (libsBase / basename).toPath
+          if !Files.exists(target) then Files.copy(Paths.get(raw), target)
+
+          libsBase.getParentFile().toPath.relativize(target).toString
+
         def tomlify(arr: Iterable[String]) =
-          arr.map(i => s"""  "$i" """.trim()).mkString("[", ", ", "]")
+          arr
+            .map { raw =>
+              mapping.getOrElseUpdate(raw, internify(raw))
+            }
+            .map(i => s"""  "$i" """.trim())
+            .mkString("[", ", ", "]")
 
         val contents = allInfos
           .map { info =>
             s"""
-      |[[compilers]]
-      |scala = "${info.scala}"
-      |bridgeClasspath = ${tomlify(info.bridgeClasspath)}
-      |compilerClasspath = ${tomlify(info.compilerClasspath)}
-      |libraryClasspath = ${tomlify(info.libraryClasspath)}
-      """
+            |[[compilers]]
+            |scala = "${info.scala}"
+            |bridgeClasspath = ${tomlify(info.bridgeClasspath)}
+            |compilerClasspath = ${tomlify(info.compilerClasspath)}
+            |libraryClasspath = ${tomlify(info.libraryClasspath)}
+            """.trim.stripMargin
           }
           .mkString("\n\n")
 
@@ -175,4 +197,3 @@ val compilerInfo = taskKey[
       libraryClasspath: Vector[String]
   )
 ]("")
-

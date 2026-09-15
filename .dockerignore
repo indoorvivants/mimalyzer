@@ -9,3 +9,6 @@ fly.toml
 **/node_modules
 .git
 .dev
+target
+.sbt
+project/project
