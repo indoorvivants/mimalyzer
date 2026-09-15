@@ -33,7 +33,13 @@ function printSbtTask(task: string, cwd?: string): Promise<string> {
         }
         reject(new Error(errorMessage));
       } else {
-        resolve(fullOutput.trimEnd().split('\n').at(-3)!);
+        const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+        const lines = stripAnsi(fullOutput).split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const pathLine = [...lines].reverse().find(l => l.startsWith('/') || /^[A-Za-z]:[\\/]/.test(l));
+        if (!pathLine)
+          reject(new Error(`Could not find Scala.js output path in sbt output:\n${fullOutput}`));
+        else
+          resolve(pathLine);
       }
     });
   });
@@ -83,6 +89,7 @@ export default function scalaJSPlugin(options: ScalaJSPluginOptions = {}): ViteP
       console.log("Path: ", path);
       console.log("Source: ", source);
       console.log("scalajs output: ", scalaJSOutputDir);
+      console.log("resolved: ", `${scalaJSOutputDir}/${path}`);
 
       return `${scalaJSOutputDir}/${path}`;
     },

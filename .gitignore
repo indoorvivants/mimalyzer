@@ -36,3 +36,4 @@ db.json
 target
 .vscode
 metals.sbt
+.libs
