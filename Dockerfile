@@ -4,7 +4,7 @@ ARG SBT_COMMIT=v2.0.9
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl ca-certificates \
+      curl ca-certificates gpg \
     && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSLo /usr/bin/sbt "https://raw.githubusercontent.com/sbt/sbt/${SBT_COMMIT}/sbt" \
     && chmod +x /usr/bin/sbt
