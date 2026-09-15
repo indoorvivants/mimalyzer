@@ -7,25 +7,6 @@ import java.net.URL
 import java.util.ServiceLoader
 import mimalyzer.protocol.ScalaVersion
 
-case class CompilerInfo(
-    scala: String,
-    bridgeClasspath: List[String],
-    compilerClasspath: List[String],
-    libraryClasspath: List[String] = List.empty
-) derives toml.Codec
-
-case class CompilersInfo(
-    compilers: List[CompilerInfo]
-) derives toml.Codec
-
-object CompilersInfo:
-  def readFromResources =
-    val l = scala.io.Source
-      .fromInputStream(getClass().getResourceAsStream("/compilers.toml"))
-      .getLines()
-      .mkString("\n")
-    toml.Toml.parseAs[CompilersInfo](l)
-
 case class Compilers(
     mapping: Map[ScalaVersion, CompilerInterface]
 )

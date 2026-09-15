@@ -12,3 +12,7 @@ fly.toml
 target
 .sbt
 project/project
+build
+.libs
+project/target
+metals.sbt

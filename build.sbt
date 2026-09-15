@@ -17,7 +17,7 @@ lazy val compilerInterface =
 
 lazy val backend = project
   .in(file("backend"))
-  .enablePlugins(RevolverPlugin)
+  .enablePlugins(RevolverPlugin, JavaAppPackaging)
   .dependsOn(shared.jvm(Scala), compilerInterface)
   .settings(
     scalaVersion := Scala,
@@ -88,6 +88,17 @@ lazy val backend = project
 
         Seq(path)
       }
+    },
+    bundleBackend := {
+      val stagePath = stage.value
+      val libsPath = (ThisBuild / baseDirectory).value / ".libs"
+
+      val target = (ThisBuild / baseDirectory).value / "build"
+
+      IO.createDirectory(target)
+
+      IO.copyDirectory(stagePath, target / "app")
+      IO.copyDirectory(libsPath, target / ".libs")
     }
   )
 
@@ -118,7 +129,20 @@ lazy val frontend = project
   .settings(
     reStartCommand := Seq("npm", "run", "dev"),
     reStart / baseDirectory := (ThisBuild / baseDirectory).value / "frontend",
-    scalaJSUseMainModuleInitializer := true
+    scalaJSUseMainModuleInitializer := true,
+    fastLinkJS / scalaJSLinkerConfig := {
+      import org.scalajs.linker.interface.ModuleSplitStyle
+      var conf = (fastLinkJS / scalaJSLinkerConfig).value
+
+      conf = conf
+        .withModuleKind(ModuleKind.ESModule)
+
+      conf = conf.withModuleSplitStyle(
+        ModuleSplitStyle.SmallModulesFor(List("mimalyzer"))
+      )
+
+      conf
+    }
   )
 
 lazy val compilers = projectMatrix
@@ -197,3 +221,6 @@ val compilerInfo = taskKey[
       libraryClasspath: Vector[String]
   )
 ]("")
+
+@transient
+val bundleBackend = taskKey[Unit]("")
