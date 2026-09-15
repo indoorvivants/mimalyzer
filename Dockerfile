@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       | gpg --dearmor -o /etc/apt/keyrings/adoptium.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" \
       > /etc/apt/sources.list.d/adoptium.list \
-    && apt-get update && apt-get install -y --no-install-recommends temurin-24-jre \
+    && apt-get update && apt-get install -y --no-install-recommends temurin-25-jre \
     && setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
     && apt-get purge -y --auto-remove gpg wget libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
