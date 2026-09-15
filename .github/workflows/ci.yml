@@ -15,18 +15,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: coursier/cache-action@v6
-      - uses: VirtusLab/scala-cli-setup@main
+
+      - uses: actions/setup-java@v6
         with:
-          power: true
+          distribution: temurin
+          java-version: '25'
+          cache: 'sbt'
 
-      - name: Check formatting
-        run: make code-check || echo "Run `make pre-ci`"
-
-      # Smithy4s is not idempotent unfortunately :(
-      # - name: Check generated code is up to date
-      #   run: make smithy4s && git diff --exit-code
+      - uses: sbt/setup-sbt@v1
 
       - name: Check Docker build 
-        run: make docker
-
+        run: docker build .
