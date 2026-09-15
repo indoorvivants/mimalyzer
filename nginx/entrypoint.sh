@@ -2,7 +2,7 @@
 
 set -xeuo pipefail
 
-/app/backend server --port 8080 &
+/run/app/bin/backend server --port 8080 &
 nginx -g "daemon off;" &
 
 wait -n

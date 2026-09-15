@@ -4,4 +4,4 @@ addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
 
 addSbtPlugin("com.indoorvivants" % "sbt-revolver-process" % "0.11.2")
 addSbtPlugin("com.indoorvivants" % "sbt-revolver" % "0.11.2")
-
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")

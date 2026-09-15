@@ -37,3 +37,4 @@ target
 .vscode
 metals.sbt
 .libs
+build
