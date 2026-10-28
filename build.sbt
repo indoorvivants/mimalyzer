@@ -1,7 +1,7 @@
 import java.nio.file.Paths
 import java.nio.file.Files
 
-val Scala = "3.9.0"
+val Scala = "3.10.0"
 val CompilerVersions = Seq("2.12.21", "2.13.18", "3.3.9", "3.9.0", "3.10.0")
 
 lazy val root = project
@@ -26,12 +26,12 @@ lazy val backend = project
     reStart / baseDirectory := (ThisBuild / baseDirectory).value,
     libraryDependencies ++= Seq(
       "ch.epfl.scala" %% "tasty-mima" % "1.4.1",
-      "ch.epfl.scala" %% "tasty-query" % "1.9.0",
+      "ch.epfl.scala" %% "tasty-query" % "1.10.0",
       "com.disneystreaming.smithy4s" %% "smithy4s-core" % "0.19.11",
       "com.disneystreaming.smithy4s" %% "smithy4s-http4s" % "0.19.11",
       "com.indoorvivants" %% "decline-derive" % "0.3.6",
       "com.outr" %% "scribe-cats" % "3.19.0",
-      "com.typesafe" %% "mima-core" % "1.2.0",
+      "com.typesafe" %% "mima-core" % "1.2.1",
       "dev.rolang" %% "dumbo" % "0.10.2",
       "io.circe" %% "circe-jawn" % "0.14.16",
       "io.circe" %% "circe-parser" % "0.14.16",

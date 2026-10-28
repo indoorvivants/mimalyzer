@@ -62,36 +62,42 @@ def renderExamplesPage(
                   _.filter(ver => toRegex(snippet.scala).matches(ver))
                 )
                 .map { versions =>
-                  versions.map { ver =>
-                    val label =
-                      if ver.startsWith("3.3") || ver.startsWith("3.9")
-                      then ver + " (LTS)"
-                      else if ver.startsWith("3.10") then ver + " (Next)"
-                      else ver
-
-                    button(
-                      label,
-                      cls <-- selectedScala.signal.map:
-                        case Some(`ver`) => "scala-button-selected"
-                        case _           => "scala-button"
-                      ,
-                      onClick --> { _ =>
-                        val attributes = ComparisonAttributes(
-                          ScalaCode(snippet.before),
-                          ScalaCode(snippet.after),
-                          scalaVersion = ScalaVersion(ver)
-                        )
-
-                        selectedScala.set(Some(ver))
-
-                        given Stability = Stability()
-
-                        readyState.set(None)
-
-                        submitComparison(attributes, pollingState)
-                      }
+                  versions
+                    .sortBy(sv =>
+                      val parts = sv.split('.');
+                      (parts(0).toInt, parts(1).toInt)
                     )
-                  }
+                    .reverse
+                    .map { ver =>
+                      val label =
+                        if ver.startsWith("3.3") || ver.startsWith("3.9")
+                        then ver + " (LTS)"
+                        else if ver.startsWith("3.10") then ver + " (Next)"
+                        else ver
+
+                      button(
+                        label,
+                        cls <-- selectedScala.signal.map:
+                          case Some(`ver`) => "scala-button-selected"
+                          case _           => "scala-button"
+                        ,
+                        onClick --> { _ =>
+                          val attributes = ComparisonAttributes(
+                            ScalaCode(snippet.before),
+                            ScalaCode(snippet.after),
+                            scalaVersion = ScalaVersion(ver)
+                          )
+
+                          selectedScala.set(Some(ver))
+
+                          given Stability = Stability()
+
+                          readyState.set(None)
+
+                          submitComparison(attributes, pollingState)
+                        }
+                      )
+                    }
                 }
             ),
             fragmentStatusPoller(pollingState, readyState),
