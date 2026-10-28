@@ -8,6 +8,8 @@ enum MsgType(val color: String):
         "msg-info"
       )
   case Error extends MsgType("msg-error")
+  case Progress extends MsgType("msg-progress")
+  case Done extends MsgType("msg-done")
 end MsgType
 
 def message(tpe: MsgType, value: Element) =

@@ -14,9 +14,9 @@ def fragmentStatusPoller(
       case State.Fatal(msg) =>
         message(MsgType.Error, msg)
       case State.Polling(_, None) =>
-        message(MsgType.Info, "Submitted, waiting to hear back...")
+        message(MsgType.Progress, "Submitted, waiting to hear back...")
       case State.Polling(_, Some(ComparisonStatus.WaitingCase(_))) =>
-        message(MsgType.Info, "Job in queue, waiting to be picked up...")
+        message(MsgType.Progress, "Job in queue, waiting to be picked up...")
       case State.Polling(_, Some(ComparisonStatus.ProcessingCase(p))) =>
         val ahead = p.remaining.fold("")(s => s"$s remaining")
         val step = p.step.map: p =>
@@ -27,14 +27,18 @@ def fragmentStatusPoller(
             case MIMA_FINISHED        => "MiMa finished"
             case TASTY_MIMA_FINISHED  => "TASTy MiMa finished"
 
-        message(MsgType.Info, s"Working${step.map(": " + _).getOrElse("...")} $ahead")
+        message(MsgType.Progress, s"Working${step.map(": " + _).getOrElse("...")} $ahead")
       case State.Polling(id, Some(ComparisonStatus.CompletedCase(_))) =>
         readyState.set(Some(id))
         message(
-          MsgType.Info,
+          MsgType.Done,
           span(
-            "Analysis finished ",
-            a("Permalink", navigateTo(Page.ComparisonPage(id)), basicLink)
+            "Analysis finished",
+            a(
+              "Permalink →",
+              navigateTo(Page.ComparisonPage(id)),
+              cls := "permalink-button"
+            )
           )
         )
       case State.Polling(
