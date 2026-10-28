@@ -1,7 +1,8 @@
 import java.nio.file.Paths
 import java.nio.file.Files
+
 val Scala = "3.9.0"
-val CompilerVersions = Seq("2.12.21", "2.13.18", "3.3.8", "3.9.0")
+val CompilerVersions = Seq("2.12.21", "2.13.18", "3.3.9", "3.9.0", "3.10.0")
 
 lazy val root = project
   .in(file("."))
@@ -113,7 +114,7 @@ lazy val shared = projectMatrix
     )
   )
 
-lazy val frontend = project
+lazy val frontend: Project = project
   .in(file("frontend"))
   .dependsOn(shared.js(Scala))
   .enablePlugins(ScalaJSPlugin)
@@ -142,7 +143,8 @@ lazy val frontend = project
       )
 
       conf
-    }
+    },
+    Compile / sourceGenerators += snippetsGenerator
   )
 
 lazy val compilers = projectMatrix
@@ -224,3 +226,69 @@ val compilerInfo = taskKey[
 
 @transient
 val bundleBackend = taskKey[Unit]("")
+
+lazy val snippetsGenerator = Def.task[Seq[File]] {
+  val examplesDir = (ThisBuild / baseDirectory).value / "examples"
+
+  val beforeDir = examplesDir / "before"
+  val afterDir = examplesDir / "after"
+
+  val registry = examplesDir / "registry.toml"
+
+  val contents = IO.read(registry)
+
+  given toml.derivation.DefaultParams[Map[String, Snippet]]:
+    def defaultParams: Map[String, Any] = Map.empty
+
+  val snippets = toml.Toml.parseAs[Map[String, Snippet]](contents).right.get
+
+  snippets.foreach: (name, _) =>
+    assert(
+      Files.exists(beforeDir.toPath / s"$name.scala"),
+      s"before file for ${name} doesn't exist"
+    )
+    assert(
+      Files.exists(
+        afterDir.toPath / s"$name.scala"
+      ),
+      s"after file for $name doesn't exist"
+    )
+
+  val destination =
+    (Compile / managedSourceDirectories).value.head / "Snippets.scala"
+
+  val sb = new StringBuilder
+
+  sb ++= "package mimalyzer.frontend\n"
+
+  sb ++= "case class Snippet(    description: String, before: String, after: String,bincompat: Boolean, sourcecompat: Boolean,scala: String)\n"
+
+  def safeString(s: String) =
+    '"' +: (s
+      .replaceAll('"'.toString, """\\"""")
+      .replaceAll("\n", raw"\\n")) :+ '"'
+
+  sb ++= "val snippets = List[(String, Snippet)](\n"
+
+  snippets.foreach: (name, snippet) =>
+    val beforeCode = IO.read(beforeDir / s"$name.scala")
+    val afterCode = IO.read(afterDir / s"$name.scala")
+
+    val kv = List(
+      "description" -> safeString(snippet.description),
+      "before" -> safeString(beforeCode),
+      "after" -> safeString(afterCode),
+      "bincompat" -> snippet.bincompat.toString,
+      "sourcecompat" -> snippet.sourcecompat.toString,
+      "scala" -> safeString(snippet.scala)
+    )
+    sb ++= s"   (${safeString(name)}, Snippet(${kv.map(s => s._1  + "=" + s._2).mkString(", ")})),\n"
+
+  sb ++= ")\n"
+
+  IO.createDirectory(destination.getParentFile())
+
+  Files.write(destination.toPath, sb.result().getBytes())
+
+  Seq(destination)
+}

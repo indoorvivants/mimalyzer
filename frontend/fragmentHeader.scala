@@ -25,5 +25,11 @@ def fragmentHeader(using Router[Page]) = div(
       basicLink
     ),
     cls := "header-description"
+  ),
+  h3(
+    cls := "examples-callout",
+    "See ",
+    a(navigateTo(Page.Examples), "Examples", basicLink),
+    " for some known incompatibilities"
   )
 )

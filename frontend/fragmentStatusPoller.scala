@@ -19,7 +19,6 @@ def fragmentStatusPoller(
         message(MsgType.Info, "Job in queue, waiting to be picked up...")
       case State.Polling(_, Some(ComparisonStatus.ProcessingCase(p))) =>
         val ahead = p.remaining.fold("")(s => s"$s remaining")
-        println("Step: " + p.step.toString)
         val step = p.step.map: p =>
           p match
             case PICKED_UP            => "picked up the job"
@@ -28,7 +27,7 @@ def fragmentStatusPoller(
             case MIMA_FINISHED        => "MiMa finished"
             case TASTY_MIMA_FINISHED  => "TASTy MiMa finished"
 
-        message(MsgType.Info, s"Working: ${step.getOrElse("")} $ahead")
+        message(MsgType.Info, s"Working${step.map(": " + _).getOrElse("...")} $ahead")
       case State.Polling(id, Some(ComparisonStatus.CompletedCase(_))) =>
         readyState.set(Some(id))
         message(

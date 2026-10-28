@@ -3,6 +3,9 @@ services:
     build: .
     ports:
       - "8080:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       PG_HOST: postgres
       PG_USER: postgres
@@ -13,3 +16,8 @@ services:
     environment:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: mimalyzer
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "mimalyzer"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

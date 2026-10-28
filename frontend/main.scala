@@ -35,20 +35,39 @@ type JobId = UUID
     )
     .text("3.3.8")
 
-  val app = MimalyzerFrontend(oldScalaCode, newScalaCode, scalaVersion)
+  val scalaVersions = Var(List.empty[ScalaVersion])
+
+  val actionBus = EventBus[Action]()
+
+  val fetchAvailableVersions =
+    Api.client.stream(_.info()).map(_.scalaVersions) --> scalaVersions
+
+  val app =
+    MimalyzerFrontend(
+      oldScalaCode,
+      newScalaCode,
+      scalaVersion,
+      scalaVersions,
+      actionBus
+    )
 
   renderOnDomContentLoaded(
     dom.document.getElementById("content"),
-    div(child <-- app.signal)
+    div(child <-- app.signal, fetchAvailableVersions)
   )
 end mimalyzerFrontendMain
 
 class MimalyzerFrontend(
     oldCodeVar: Var[String],
     newCodeVar: Var[String],
-    scalaVersionVar: Var[String]
+    scalaVersionVar: Var[String],
+    availableVersionsVar: Var[List[ScalaVersion]],
+    actionBus: EventBus[Action]
 )(using api: Api, router: Router[Page]):
-  val signal = SplitRender[Page, HtmlElement](router.currentPageSignal)
+
+  val signal = SplitRender[Page, HtmlElement](
+    router.currentPageSignal.debugSpy(dom.console.log(_))
+  )
     .collectSignal[Page.ComparisonPage] { userPageSignal =>
       renderComparisonPage(
         oldCodeVar,
@@ -58,7 +77,22 @@ class MimalyzerFrontend(
       )
     }
     .collectStatic(Page.Main) {
-      renderMainPage(oldCodeVar, newCodeVar, scalaVersionVar)
+      renderMainPage(
+        oldCodeVar,
+        newCodeVar,
+        scalaVersionVar,
+        availableVersionsVar,
+        actionBus
+      )
+    }
+    .collectStatic(Page.Examples) {
+      renderExamplesPage(
+        oldCodeVar,
+        newCodeVar,
+        scalaVersionVar,
+        actionBus,
+        availableVersionsVar.signal.map(_.map(_.value))
+      )
     }
     .signal
 end MimalyzerFrontend

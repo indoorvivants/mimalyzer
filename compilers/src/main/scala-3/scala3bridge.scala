@@ -9,48 +9,49 @@ package mimalyzer.scala3
 
 import dotty.tools.dotc.Driver
 import dotty.tools.dotc.core.Contexts.{Context, FreshContext}
-import dotty.tools.dotc.config.Settings.Setting._
+import dotty.tools.dotc.config.Settings.Setting.*
 import dotty.tools.dotc.interfaces
 import dotty.tools.dotc.ast.Trees.Tree
 import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.interfaces.{SourceFile => ISourceFile}
-import dotty.tools.dotc.interfaces.{Diagnostic => IDiagnostic}
-import dotty.tools.dotc.reporting._
+import dotty.tools.dotc.interfaces.SourceFile as ISourceFile
+import dotty.tools.dotc.interfaces.Diagnostic as IDiagnostic
+import dotty.tools.dotc.reporting.*
 import dotty.tools.dotc.parsing.Parsers.Parser
 import dotty.tools.dotc.Compiler
 import dotty.tools.io.{AbstractFile, VirtualDirectory}
 import dotty.tools.dotc.util.SourceFile
 
-import mimalyzer.iface._
+import mimalyzer.iface.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import java.util.stream.Collector
 import java.util.stream.Collectors
 import javax.script.CompiledScript
+import dotty.tools.io.PlainFile
+import dotty.tools.io.Path
 
 case class Scala3CompilationError(line: Int, column: Int, msg: String)
     extends CompilationError
 
-class CompilerDriver(val settings: List[String]) extends Driver {
+class CompilerDriver(val settings: List[String]) extends Driver:
 
   /* Otherwise it will print usage instructions */
   override protected def sourcesRequired: Boolean = false
 
   def currentCtx = myInitCtx
 
-  private val myInitCtx: Context = {
+  private val myInitCtx: Context =
     val rootCtx = initCtx.fresh
     val ctx = setup(settings.toArray, rootCtx) match
       case Some((_, ctx)) => ctx
       case None           => rootCtx
     ctx.initialize()(using ctx)
     ctx
-  }
-}
+end CompilerDriver
 
-class AccumulatingReporter extends Reporter {
+class AccumulatingReporter extends Reporter:
 
   private var errors = List.newBuilder[CompilationError]
   override def doReport(dia: Diagnostic)(using Context) =
@@ -62,18 +63,16 @@ class AccumulatingReporter extends Reporter {
   def clear() = errors.clear()
 
   def getErrors() = errors.result().toArray
-
-}
+end AccumulatingReporter
 
 class Scala213CompilationResult(
     errs: Array[CompilationError],
     cpath: Array[String]
-) extends CompilationResult {
+) extends CompilationResult:
   override def errors(): Array[CompilationError] = errs
   override def classpath(): Array[String] = cpath
-}
 
-class Scala3Compiler() extends CompilerInterface {
+class Scala3Compiler() extends CompilerInterface:
   private val defaultFlags =
     List(
       "-color:never",
@@ -88,24 +87,23 @@ class Scala3Compiler() extends CompilerInterface {
 
   val savedClasspath = List.newBuilder[String]
 
-  override def withClasspath(cp: Array[String]): CompilerInterface = {
+  override def withClasspath(cp: Array[String]): CompilerInterface =
     savedClasspath.addAll(cp)
-    driver = () => CompilerDriver(
-      defaultFlags ++ List("-classpath", cp.mkString(File.pathSeparator))
-    )
+    driver = () =>
+      CompilerDriver(
+        defaultFlags ++ List("-classpath", cp.mkString(File.pathSeparator))
+      )
 
     this
-  }
 
   override def compile(
       fileName: String,
       contents: String,
       outDir: String
-  ): CompilationResult = {
+  ): CompilationResult =
     Files.walk(Paths.get(outDir)).collect(Collectors.toList()).asScala.foreach {
       path =>
-        if (path.getFileName().endsWith(".class"))
-          Files.delete(path)
+        if path.getFileName().endsWith(".class") then Files.delete(path)
     }
 
     val compiler = new Compiler
@@ -117,7 +115,7 @@ class Scala3Compiler() extends CompilerInterface {
       .setReporter(reporter)
       .setSetting(
         ctx.settings.outputDir,
-        AbstractFile.getDirectory(outDir)
+        new PlainFile(Path(outDir))
       )
 
     val run = compiler.newRun(using context)
@@ -126,8 +124,7 @@ class Scala3Compiler() extends CompilerInterface {
 
     new Scala213CompilationResult(
       reporter.getErrors(),
-      savedClasspath.result.toArray
+      savedClasspath.result().toArray
     )
-
-  }
-}
+  end compile
+end Scala3Compiler

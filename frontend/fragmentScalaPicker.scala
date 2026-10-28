@@ -3,10 +3,10 @@ package mimalyzer.frontend
 import mimalyzer.protocol.*
 import com.raquo.laminar.api.L.*
 
-def fragmentScalaPicker(scalaVersion: Var[String])(using Api) = div(
+def fragmentScalaPicker(scalaVersion: Var[String], availableVersions: Signal[List[ScalaVersion]])(using Api) = div(
   cls := "scala-picker-container",
-  children <-- Api.client.stream(_.info()).map { info =>
-    info.scalaVersions.map { sv =>
+  children <-- availableVersions.map { scalaVersions =>
+    scalaVersions.map { sv =>
       p(
         cls := "scala-version-option",
         cls("scala-version-selected") <-- scalaVersion.signal.map(
