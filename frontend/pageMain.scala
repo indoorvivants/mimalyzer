@@ -6,19 +6,35 @@ import com.raquo.airstream.web.WebStorageVar
 import mimalyzer.protocol.CodeLabel.*
 import scalajs.js, org.scalajs.dom
 
-def renderMainPage(
-    oldScalaCode: Var[String],
-    newScalaCode: Var[String],
-    scalaVersion: Var[String]
-)(using
-    Api,
-    Router[Page]
-) =
-  val actionBus = EventBus[Action]()
-  val readyState = Var(Option.empty[ComparisonId])
-  val pollingState = Var(State.None)
+def submitComparison(
+    attributes: ComparisonAttributes,
+    pollingState: Var[State]
+)(using Api, Stability) =
+  exponentialFetch(() => Api.client.promise(_.createComparison(attributes)))
+    .`then`(
+      good => pollingState.set(State.Polling(good.comparisonId, None)),
+      bad =>
+        bad match
+          case e: CodeTooBig =>
+            val lab = e.which match
+              case AFTER  => "New"
+              case BEFORE => "Old"
 
-  val poller = EventStream
+            pollingState.set(
+              State.Fatal(
+                s"$lab code too big: size [${e.sizeBytes}] is larger than allowed [${e.maxSizeBytes}]"
+              )
+            )
+
+          case err: smithy4s.http.RawErrorResponse =>
+            pollingState.set(State.Fatal(s"server error: $err"))
+
+          case other =>
+            pollingState.set(State.Fatal(other.toString()))
+    )
+
+def poller(pollingState: Var[State])(using Api) =
+  EventStream
     .periodic(intervalMs = 250)
     .withCurrentValueOf(pollingState.signal.debugSpy(fn => dom.console.log(fn)))
     .map(_._2)
@@ -32,6 +48,19 @@ def renderMainPage(
         .map(_.status)
         .map(status => State.Polling(id, Some(status)))
     } --> pollingState.writer
+
+def renderMainPage(
+    oldScalaCode: Var[String],
+    newScalaCode: Var[String],
+    scalaVersion: Var[String],
+    scalaVersions: Var[List[ScalaVersion]],
+    actionBus: EventBus[Action]
+)(using
+    Api,
+    Router[Page]
+) =
+  val readyState = Var(Option.empty[ComparisonId])
+  val pollingState = Var(State.None)
 
   val handleFormSubmit =
     actionBus.events.withCurrentValueOf(
@@ -47,29 +76,7 @@ def renderMainPage(
         )
 
       given Stability = Stability()
-
-      exponentialFetch(() => Api.client.promise(_.createComparison(attributes)))
-        .`then`(
-          good => pollingState.set(State.Polling(good.comparisonId, None)),
-          bad =>
-            bad match
-              case e: CodeTooBig =>
-                val lab = e.which match
-                  case AFTER  => "New"
-                  case BEFORE => "Old"
-
-                pollingState.set(
-                  State.Fatal(
-                    s"$lab code too big: size [${e.sizeBytes}] is larger than allowed [${e.maxSizeBytes}]"
-                  )
-                )
-
-              case err: smithy4s.http.RawErrorResponse =>
-                pollingState.set(State.Fatal(s"server error: $err"))
-
-              case other =>
-                pollingState.set(State.Fatal(other.toString()))
-        )
+      submitComparison(attributes, pollingState)
 
     }
 
@@ -81,7 +88,7 @@ def renderMainPage(
     )
 
   div(
-    poller,
+    poller(pollingState),
     cls := "main-content-container",
     fragmentHeader,
     fragmentStatusPoller(pollingState, readyState),
@@ -106,7 +113,7 @@ def renderMainPage(
         codeMirrorTextArea(newScalaCode)
       )
     ),
-    fragmentScalaPicker(scalaVersion),
+    fragmentScalaPicker(scalaVersion, scalaVersions.signal),
     submitButton,
     fragmentMimaErrors(
       readyState.signal.changes.collectSome.flatMapSwitch(id =>

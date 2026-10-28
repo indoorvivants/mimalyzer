@@ -9,29 +9,35 @@ sealed trait Page extends Product with Serializable
 object Page:
   case class ComparisonPage(id: ComparisonId) extends Page
   case object Main extends Page
-
-val bindingPageRoute = Route(
-  encode = (bindingPage: Page.ComparisonPage) => bindingPage.id.value.toString,
-  decode = arg => Page.ComparisonPage(id = ComparisonId(UUID.fromString(arg))),
-  pattern = root / "comparison" / segment[String] / endOfSegments
-)
-
-val loginRoute = Route.static(Page.Main, root)
+  case object Examples extends Page
 
 object router
     extends Router[Page](
-      routes = List(bindingPageRoute, loginRoute),
+      routes = List(
+        Route.static(Page.Main, root / endOfSegments),
+        Route.static(Page.Examples, root / "examples" / endOfSegments),
+        Route(
+          encode =
+            (bindingPage: Page.ComparisonPage) => bindingPage.id.value.toString,
+          decode =
+            arg => Page.ComparisonPage(id = ComparisonId(UUID.fromString(arg))),
+          pattern = root / "comparison" / segment[String] / endOfSegments
+        )
+      ),
       getPageTitle = _ match
         case Page.Main               => "Mimalyzer"
+        case Page.Examples           => "Mimalyzer: examples"
         case Page.ComparisonPage(id) => "Mimalyzer",
       serializePage = page =>
         page match
-          case Page.Main               => ""
+          case Page.Main               => "main"
+          case Page.Examples           => "examples"
           case Page.ComparisonPage(id) => s"comparison: ${id}"
       ,
       deserializePage = pageStr =>
         pageStr match
-          case ""                 => Page.Main
+          case "main"             => Page.Main
+          case "examples"         => Page.Examples
           case s"comparison: $id" =>
             Page.ComparisonPage(ComparisonId(UUID.fromString(id)))
       ,

@@ -1,0 +1,29 @@
+[adding-private-val-to-trait]
+description = "Adding a private val to trait"
+bincompat = false
+sourcecompat = true
+scala = "*"
+
+[adding-field-to-case-class]
+description = "Adding a field to case class"
+bincompat = false
+sourcecompat = true
+scala = "*"
+
+[adding-default-parameter]
+description = "Adding a parameter with a default value"
+bincompat = false
+sourcecompat = true
+scala = "*"
+
+[adding-abstract-method-to-trait]
+description = "Adding an abstract method to trait"
+bincompat = false
+sourcecompat = false
+scala = "*"
+
+[changing-method-return-type]
+description = "Changing method return type"
+bincompat = false
+sourcecompat = false
+scala = "*"

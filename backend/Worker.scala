@@ -28,7 +28,7 @@ class Worker(
             .repeatEval(q.tryTake)
             .meteredStartImmediately(config.workerPulse)
             .evalTap:
-              case None      => Log.info(s"Worker $id is going to steal shit")
+              case None      => Log.debug(s"Worker $id is going to steal shit")
               case Some(jid) => Log.info(s"Worker $id is going lease job $jid")
             .flatMap {
               case None =>
