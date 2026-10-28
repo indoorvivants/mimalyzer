@@ -388,6 +388,24 @@ code.static-code-block {
     gap: 1.5rem;
 }
 
+.mima-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+@media (min-width: 768px) {
+    .mima-results {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+.mima-results > * {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
 .error-container {
     display: flex;
     flex-direction: column;

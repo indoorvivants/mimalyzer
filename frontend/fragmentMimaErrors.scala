@@ -58,7 +58,7 @@ def fragmentMimaErrors(gso: EventStream[GetComparisonOutput]) =
             )
         )
 
-      div(cls := "error-container", mimaBlock, tastyMimaBlock)
+      div(cls := "mima-results", mimaBlock, tastyMimaBlock)
   )
 
 private def renderProblems(pl: List[Problem]) =

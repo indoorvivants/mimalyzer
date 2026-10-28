@@ -1,5 +1,5 @@
-[adding-private-val-to-trait]
-description = "Adding a private val to trait"
+[removing-private-val-from-trait]
+description = "Removing a private val from trait"
 bincompat = false
 sourcecompat = true
 scala = "*"
@@ -7,7 +7,7 @@ scala = "*"
 [adding-field-to-case-class]
 description = "Adding a field to case class"
 bincompat = false
-sourcecompat = true
+sourcecompat = false
 scala = "*"
 
 [adding-default-parameter]
